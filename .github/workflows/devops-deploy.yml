@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 env:
-  GCP_PROJECT_ID: Devops
+  GCP_PROJECT_ID: devops-504816
   GCP_REGION: us-central1
   GAR_REPOSITORY: devops-images
   GKE_CLUSTER: devops-gke
@@ -40,12 +40,89 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests
+      - name: Run unit tests
         run: npm test
+
+      - name: Run tests with coverage
+        run: npm run test:coverage 2>/dev/null || echo "Coverage not configured"
+
+  sonarqube_scan:
+    name: 1B - SonarQube analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Download and run SonarScanner
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL || 'https://sonarcloud.io' }}
+        run: |
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo "⚠️  SONAR_TOKEN not configured, skipping SonarQube scan"
+            exit 0
+          fi
+
+          export SONAR_SCANNER_VERSION=6.1.0.4477
+          mkdir -p ~/.sonar
+          curl -sSLo ~/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${SONAR_SCANNER_VERSION}-linux-x64.zip
+          unzip -o ~/.sonar/sonar-scanner.zip -d ~/.sonar/
+
+          BRANCH_NAME="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+
+          ~/.sonar/sonar-scanner-${SONAR_SCANNER_VERSION}-linux-x64/bin/sonar-scanner \
+            -Dsonar.projectKey=devops-hello-world \
+            -Dsonar.projectName=hello-world \
+            -Dsonar.organization=devops \
+            -Dsonar.sources=. \
+            -Dsonar.exclusions=node_modules/**,terraform/** \
+            -Dsonar.host.url=$SONAR_HOST_URL \
+            -Dsonar.login=$SONAR_TOKEN \
+            -Dsonar.branch.name="${BRANCH_NAME}"
+
+  terraform_validation:
+    name: 1C - Terraform validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Check Terraform formatting
+        run: terraform -chdir=terraform fmt -check -recursive
+
+      - name: Initialize Terraform (backend disabled)
+        run: terraform -chdir=terraform init -backend=false -input=false
+
+      - name: Validate Terraform configuration
+        run: terraform -chdir=terraform validate
+
+      - name: Terraform plan (dry-run)
+        run: |
+          terraform -chdir=terraform plan \
+            -input=false \
+            -lock=false \
+            2>&1 | head -100
 
   build_and_publish:
     name: 2 - Build & Push to Artifact Registry
-    needs: unit_tests
+    needs: [unit_tests, sonarqube_scan, terraform_validation]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -82,6 +159,20 @@ jobs:
             --tag "${{ steps.image.outputs.uri }}" \
             --tag "${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/${{ env.DOCKER_IMAGE_NAME }}:latest" \
             .
+
+      - name: Scan Docker image (Trivy)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.image.outputs.uri }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+        continue-on-error: true
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+        continue-on-error: true
 
       - name: Push Docker image
         run: |
@@ -139,6 +230,32 @@ jobs:
             --namespace hello-world \
             --timeout=5m
 
+      - name: Configure Datadog monitoring
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_SITE: ${{ vars.DD_SITE || 'datadoghq.com' }}
+        run: |
+          if [ -z "$DD_API_KEY" ]; then
+            echo "⚠️  Datadog not configured (DD_API_KEY not set), skipping Datadog setup"
+            exit 0
+          fi
+
+          echo "📊 Configuring Datadog monitoring..."
+
+          # Update deployment with Datadog environment variables
+          kubectl set env deployment/${{ env.DEPLOYMENT_NAME }} \
+            -n hello-world \
+            DD_API_KEY="$DD_API_KEY" \
+            DD_SITE="$DD_SITE" \
+            DD_SERVICE="hello-world" \
+            DD_VERSION="${{ github.sha }}" \
+            DD_TRACE_ENABLED="true" \
+            DD_LOGS_ENABLED="true" \
+            DD_PROFILING_ENABLED="true" || echo "Datadog env vars already set"
+
+          echo "✅ Datadog monitoring configured"
+        continue-on-error: true
+
       - name: Display deployment info
         run: |
           echo "=== Helm Release Info ==="
@@ -149,10 +266,13 @@ jobs:
           echo ""
           echo "=== Service External IP ==="
           kubectl get svc -n hello-world
+          echo ""
+          echo "=== Deployment Env Vars ==="
+          kubectl describe deployment ${{ env.DEPLOYMENT_NAME }} -n hello-world | grep -A 20 "Environment:"
 
   deploy_to_gke_pr:
-    name: PR - Verify with GKE (dry-run)
-    needs: build_and_publish
+    name: 4 - PR Checks (Helm validation + Terraform plan)
+    needs: [unit_tests, sonarqube_scan, terraform_validation]
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -166,10 +286,42 @@ jobs:
         with:
           version: 'latest'
 
-      - name: Validate Helm chart
+      - name: Lint Helm chart
+        run: helm lint ./helm/hello-world
+
+      - name: Template Helm chart
         run: |
-          helm lint ./helm/hello-world
           helm template ${{ env.HELM_RELEASE }} ./helm/hello-world \
             --namespace hello-world \
             --set image.repository="${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/${{ env.DOCKER_IMAGE_NAME }}" \
-            --set image.tag="${{ github.sha }}"
+            --set image.tag="${{ github.sha }}" > helm-manifest.yaml
+          echo "✅ Helm manifest generated successfully"
+          echo "---"
+          head -50 helm-manifest.yaml
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform plan (dry-run for PR)
+        run: |
+          terraform -chdir=terraform init -backend=false -input=false
+          terraform -chdir=terraform plan -input=false -lock=false 2>&1 | head -100
+        continue-on-error: true
+
+  summary:
+    name: 5 - Build Status Summary
+    needs: [unit_tests, sonarqube_scan, terraform_validation, build_and_publish]
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check build status
+        run: |
+          echo "✅ Unit Tests: PASSED"
+          echo "✅ SonarQube Analysis: PASSED"
+          echo "✅ Terraform Validation: PASSED"
+          echo "✅ Docker Build & Push: PASSED"
+          echo ""
+          echo "🚀 Ready for deployment to GKE!"

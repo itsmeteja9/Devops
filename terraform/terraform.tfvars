@@ -1,4 +1,4 @@
-project_id              = "devops-poc-demo"
+project_id              = "devops-504816"
 region                  = "us-central1"
 cluster_name            = "devops-gke"
 environment             = "dev"
