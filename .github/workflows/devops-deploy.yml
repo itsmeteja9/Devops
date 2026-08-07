@@ -81,9 +81,9 @@ jobs:
           BRANCH_NAME="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
 
           ~/.sonar/sonar-scanner-${SONAR_SCANNER_VERSION}-linux-x64/bin/sonar-scanner \
-            -Dsonar.projectKey=devops-hello-world \
+            -Dsonar.projectKey=harnesspoc_hello \
             -Dsonar.projectName=hello-world \
-            -Dsonar.organization=devops \
+            -Dsonar.organization=harnesspoc \
             -Dsonar.sources=. \
             -Dsonar.exclusions=node_modules/**,terraform/** \
             -Dsonar.host.url=$SONAR_HOST_URL \
