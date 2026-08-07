@@ -1,0 +1,10 @@
+project_id              = "devops-poc-demo"
+region                  = "us-central1"
+cluster_name            = "devops-gke"
+environment             = "dev"
+machine_type            = "n1-standard-2"
+node_count              = 2
+min_nodes               = 2
+max_nodes               = 5
+preemptible             = false
+artifact_registry_repo  = "devops-images"
