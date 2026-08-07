@@ -113,10 +113,10 @@ resource "google_container_cluster" "primary" {
 
 # Node Pool
 resource "google_container_node_pool" "primary_nodes" {
-  name           = "primary-node-pool"
-  cluster        = google_container_cluster.primary.name
-  location       = var.region
-  node_count     = var.node_count
+  name       = "primary-node-pool"
+  cluster    = google_container_cluster.primary.name
+  location   = var.region
+  node_count = var.node_count
 
   autoscaling {
     min_node_count = var.min_nodes
@@ -236,10 +236,10 @@ resource "helm_release" "hello_world" {
       }
 
       autoscaling = {
-        enabled           = true
-        minReplicas       = 3
-        maxReplicas       = 10
-        targetCPUPercent  = 70
+        enabled          = true
+        minReplicas      = 3
+        maxReplicas      = 10
+        targetCPUPercent = 70
       }
 
       env = [
