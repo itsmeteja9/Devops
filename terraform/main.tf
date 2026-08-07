@@ -15,10 +15,10 @@ terraform {
     }
   }
 
-  backend "gcs" {
-    bucket = "devops-terraform-state"
-    prefix = "gcp-infrastructure"
-  }
+  # backend "gcs" {
+  #   bucket = "devops-terraform-state"
+  #   prefix = "gcp-infrastructure"
+  # }
 }
 
 provider "google" {
