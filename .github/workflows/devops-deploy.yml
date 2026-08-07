@@ -193,7 +193,6 @@ jobs:
         run: |
           docker build \
             --tag "${{ steps.image.outputs.uri }}" \
-            --tag "${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/${{ env.DOCKER_IMAGE_NAME }}:latest" \
             .
 
       - name: Scan Docker image (Trivy)
@@ -213,7 +212,6 @@ jobs:
       - name: Push Docker image
         run: |
           docker push "${{ steps.image.outputs.uri }}"
-          docker push "${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/${{ env.DOCKER_IMAGE_NAME }}:latest"
 
   deploy_to_gke:
     name: 3 - Deploy to GKE
