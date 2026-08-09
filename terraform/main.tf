@@ -239,7 +239,7 @@ resource "google_artifact_registry_repository_iam_member" "registry_access" {
 # Delete existing failed Helm release before creating new one
 resource "null_resource" "delete_failed_release" {
   provisioner "local-exec" {
-    command = "helm delete ${var.app_name} -n ${var.app_namespace} --ignore-not-found=true 2>/dev/null || true"
+    command = "helm delete ${var.app_name} -n ${var.app_namespace} --force --no-hooks --ignore-not-found=true 2>/dev/null || true"
   }
 }
 
@@ -249,11 +249,9 @@ resource "helm_release" "app" {
   chart        = "../helm"
   namespace    = var.app_namespace
   version      = var.app_chart_version
-  wait         = false
-  atomic       = false
-  replace      = true
-  force_update = true
-  skip_crds    = true
+  wait      = false
+  atomic    = false
+  skip_crds = true
 
   values = [
     yamlencode({
