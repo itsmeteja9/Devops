@@ -216,7 +216,7 @@ resource "google_artifact_registry_repository_iam_member" "registry_access" {
 resource "kubernetes_service_account" "app" {
   metadata {
     name      = "app-ksa"
-    namespace = kubernetes_namespace.app.metadata[0].name
+    namespace = var.app_namespace
     annotations = {
       "iam.gke.io/gcp-service-account" = data.google_service_account.app_sa.email
     }
@@ -227,7 +227,7 @@ resource "kubernetes_service_account" "app" {
 resource "helm_release" "app" {
   name      = var.app_name
   chart     = "../helm/${var.app_name}"
-  namespace = kubernetes_namespace.app.metadata[0].name
+  namespace = var.app_namespace
   version   = var.app_chart_version
   wait      = true
   timeout   = 600
@@ -324,7 +324,7 @@ output "artifact_registry_url" {
 }
 
 output "kubernetes_namespace" {
-  value       = kubernetes_namespace.app.metadata[0].name
+  value       = var.app_namespace
   description = "Kubernetes Namespace"
 }
 
