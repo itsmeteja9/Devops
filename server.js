@@ -1,10 +1,24 @@
-const { createApp } = require('./app');
+const app = require('./app');
 
-const port = Number(process.env.PORT) || 8080;
-const server = createApp().listen(port, '0.0.0.0', () => {
-  console.log(`Helm Demo running on port ${port}`);
+const PORT = process.env.PORT || 8080;
+
+const server = app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
 
+// Graceful shutdown
 process.on('SIGTERM', () => {
-  server.close(() => process.exit(0));
+  console.log('SIGTERM signal received: closing HTTP server');
+  server.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT signal received: closing HTTP server');
+  server.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
+  });
 });

@@ -14,11 +14,6 @@ terraform {
       version = "~> 2.10"
     }
   }
-
-  # backend "gcs" {
-  #   bucket = "devops-terraform-state"
-  #   prefix = "gcp-infrastructure"
-  # }
 }
 
 provider "google" {
@@ -26,29 +21,29 @@ provider "google" {
   region  = var.region
 }
 
+data "google_client_config" "default" {}
+
 provider "kubernetes" {
-  host                   = "https://${google_container_cluster.primary.endpoint}"
+  host                   = "https://${google_container_cluster.gke.endpoint}"
   token                  = data.google_client_config.default.access_token
-  cluster_ca_certificate = base64decode(google_container_cluster.primary.master_auth[0].cluster_ca_certificate)
+  cluster_ca_certificate = base64decode(google_container_cluster.gke.master_auth[0].cluster_ca_certificate)
 }
 
 provider "helm" {
   kubernetes {
-    host                   = "https://${google_container_cluster.primary.endpoint}"
+    host                   = "https://${google_container_cluster.gke.endpoint}"
     token                  = data.google_client_config.default.access_token
-    cluster_ca_certificate = base64decode(google_container_cluster.primary.master_auth[0].cluster_ca_certificate)
+    cluster_ca_certificate = base64decode(google_container_cluster.gke.master_auth[0].cluster_ca_certificate)
   }
 }
-
-data "google_client_config" "default" {}
 
 # Enable required APIs
 resource "google_project_service" "required_apis" {
   for_each = toset([
     "container.googleapis.com",
     "artifactregistry.googleapis.com",
-    "servicenetworking.googleapis.com",
-    "cloudresourcemanager.googleapis.com",
+    "compute.googleapis.com",
+    "iam.googleapis.com"
   ])
 
   service            = each.value
@@ -57,33 +52,33 @@ resource "google_project_service" "required_apis" {
 
 # VPC Network
 resource "google_compute_network" "vpc" {
-  name                    = "devops-vpc"
+  name                    = "${var.project_name}-vpc"
   auto_create_subnetworks = false
   project                 = var.project_id
 
   depends_on = [google_project_service.required_apis]
 }
 
-# Subnet
+# Subnet with secondary ranges for pods and services
 resource "google_compute_subnetwork" "subnet" {
-  name          = "devops-subnet"
-  ip_cidr_range = "10.0.0.0/20"
+  name          = "${var.project_name}-subnet"
+  ip_cidr_range = var.subnet_cidr
   region        = var.region
   network       = google_compute_network.vpc.id
 
   secondary_ip_range {
     range_name    = "pods"
-    ip_cidr_range = "10.4.0.0/14"
+    ip_cidr_range = var.pods_cidr
   }
 
   secondary_ip_range {
     range_name    = "services"
-    ip_cidr_range = "10.8.0.0/20"
+    ip_cidr_range = var.services_cidr
   }
 }
 
 # GKE Cluster
-resource "google_container_cluster" "primary" {
+resource "google_container_cluster" "gke" {
   name     = var.cluster_name
   location = var.region
 
@@ -97,24 +92,28 @@ resource "google_container_cluster" "primary" {
     workload_pool = "${var.project_id}.svc.id.goog"
   }
 
+  ip_allocation_policy {
+    cluster_secondary_range_name  = "pods"
+    services_secondary_range_name = "services"
+  }
+
   addons_config {
     http_load_balancing {
       disabled = false
     }
   }
 
-  ip_allocation_policy {
-    cluster_secondary_range_name  = "pods"
-    services_secondary_range_name = "services"
-  }
-
   depends_on = [google_project_service.required_apis]
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # Node Pool
-resource "google_container_node_pool" "primary_nodes" {
-  name       = "primary-node-pool"
-  cluster    = google_container_cluster.primary.name
+resource "google_container_node_pool" "primary" {
+  name       = "${var.project_name}-pool"
+  cluster    = google_container_cluster.gke.name
   location   = var.region
   node_count = var.node_count
 
@@ -129,9 +128,9 @@ resource "google_container_node_pool" "primary_nodes" {
   }
 
   node_config {
-    preemptible  = var.preemptible
+    preemptible  = var.use_preemptible_nodes
     machine_type = var.machine_type
-    disk_size_gb = 50
+    disk_size_gb = var.disk_size
 
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform"
@@ -143,10 +142,10 @@ resource "google_container_node_pool" "primary_nodes" {
 
     labels = {
       environment = var.environment
-      managed-by  = "terraform"
+      managed_by  = "terraform"
     }
 
-    tags = ["gke-node", "devops"]
+    tags = ["gke-node", var.project_name]
   }
 }
 
@@ -154,131 +153,164 @@ resource "google_container_node_pool" "primary_nodes" {
 resource "google_artifact_registry_repository" "docker_repo" {
   location      = var.region
   repository_id = var.artifact_registry_repo
-  description   = "Docker images for DevOps"
+  description   = "Docker images for ${var.project_name}"
   format        = "DOCKER"
   project       = var.project_id
 
   depends_on = [google_project_service.required_apis]
 }
 
-# Service Account for Workload Identity
-resource "google_service_account" "devops_ksa" {
-  account_id   = "devops-ksa"
-  display_name = "DevOps Kubernetes Service Account"
+# Service Account for applications
+resource "google_service_account" "app_sa" {
+  account_id   = "${var.project_name}-app"
+  display_name = "Application Service Account"
   project      = var.project_id
 }
 
 # Workload Identity Binding
-resource "google_service_account_iam_member" "workload_identity_binding" {
-  service_account_id = google_service_account.devops_ksa.name
+resource "google_service_account_iam_member" "workload_identity" {
+  service_account_id = google_service_account.app_sa.name
   role               = "roles/iam.workloadIdentityUser"
-  member             = "serviceAccount:${var.project_id}.svc.id.goog[hello-world/hello-world-ksa]"
+  member             = "serviceAccount:${var.project_id}.svc.id.goog[${var.app_namespace}/app-ksa]"
 }
 
-# Artifact Registry access
-resource "google_artifact_registry_repository_iam_member" "artifact_registry_access" {
+# Artifact Registry read access
+resource "google_artifact_registry_repository_iam_member" "registry_access" {
   repository = google_artifact_registry_repository.docker_repo.name
   role       = "roles/artifactregistry.reader"
-  member     = "serviceAccount:${google_service_account.devops_ksa.email}"
+  member     = "serviceAccount:${google_service_account.app_sa.email}"
   location   = var.region
 }
 
 # Kubernetes Namespace
-resource "kubernetes_namespace" "hello_world" {
+resource "kubernetes_namespace" "app" {
   metadata {
-    name = "hello-world"
+    name = var.app_namespace
+    labels = {
+      "app.kubernetes.io/name" = var.project_name
+    }
   }
 
-  depends_on = [google_container_node_pool.primary_nodes]
+  depends_on = [google_container_node_pool.primary]
 }
 
-# ServiceAccount in Kubernetes
-resource "kubernetes_service_account" "hello_world" {
+# Kubernetes Service Account
+resource "kubernetes_service_account" "app" {
   metadata {
-    name      = "hello-world-ksa"
-    namespace = kubernetes_namespace.hello_world.metadata[0].name
+    name      = "app-ksa"
+    namespace = kubernetes_namespace.app.metadata[0].name
     annotations = {
-      "iam.gke.io/gcp-service-account" = google_service_account.devops_ksa.email
+      "iam.gke.io/gcp-service-account" = google_service_account.app_sa.email
     }
   }
 }
 
-# Deploy Hello-World App using Helm
-resource "helm_release" "hello_world" {
-  name      = "hello-world"
-  chart     = "../helm/hello-world"
-  namespace = kubernetes_namespace.hello_world.metadata[0].name
+# Deploy application with Helm
+resource "helm_release" "app" {
+  name       = var.app_name
+  chart      = "../helm/${var.app_name}"
+  namespace  = kubernetes_namespace.app.metadata[0].name
+  version    = var.app_chart_version
+  wait       = true
+  timeout    = 600
+  atomic     = true
 
   values = [
     yamlencode({
-      replicaCount = 3
+      replicaCount = var.app_replicas
 
       image = {
-        repository = "${var.region}-docker.pkg.dev/${var.project_id}/${var.artifact_registry_repo}/hello-world"
-        tag        = "latest"
+        repository = "${var.region}-docker.pkg.dev/${var.project_id}/${var.artifact_registry_repo}/${var.app_name}"
+        tag        = var.app_image_tag
         pullPolicy = "IfNotPresent"
       }
 
       service = {
-        type = "LoadBalancer"
-        port = 80
+        type = var.service_type
+        port = var.app_port
+      }
+
+      ingress = {
+        enabled = var.enable_ingress
       }
 
       resources = {
         limits = {
-          cpu    = "500m"
-          memory = "512Mi"
+          cpu    = var.container_cpu_limit
+          memory = var.container_memory_limit
         }
         requests = {
-          cpu    = "250m"
-          memory = "256Mi"
+          cpu    = var.container_cpu_request
+          memory = var.container_memory_request
         }
       }
 
       autoscaling = {
-        enabled          = true
-        minReplicas      = 3
-        maxReplicas      = 10
-        targetCPUPercent = 70
+        enabled          = var.enable_autoscaling
+        minReplicas      = var.app_min_replicas
+        maxReplicas      = var.app_max_replicas
+        targetCPUPercent = var.target_cpu_utilization
       }
 
       env = [
         {
           name  = "NODE_ENV"
-          value = "production"
+          value = var.environment
         },
         {
-          name  = "PORT"
-          value = "8080"
+          name  = "LOG_LEVEL"
+          value = var.log_level
         }
       ]
 
       serviceAccount = {
         create = true
-        name   = "hello-world-ksa"
+        name   = "app-ksa"
         annotations = {
-          "iam.gke.io/gcp-service-account" = google_service_account.devops_ksa.email
+          "iam.gke.io/gcp-service-account" = google_service_account.app_sa.email
         }
+      }
+
+      monitoring = {
+        enabled = var.enable_monitoring
+      }
+
+      securityContext = {
+        runAsNonRoot = true
+        runAsUser    = 65534
       }
     })
   ]
 
-  depends_on = [google_container_node_pool.primary_nodes, kubernetes_service_account.hello_world]
+  depends_on = [
+    google_container_node_pool.primary,
+    kubernetes_service_account.app
+  ]
 }
 
 # Outputs
-output "kubernetes_cluster_name" {
-  value       = google_container_cluster.primary.name
+output "gke_cluster_name" {
+  value       = google_container_cluster.gke.name
   description = "GKE Cluster Name"
 }
 
-output "kubernetes_cluster_host" {
-  value       = google_container_cluster.primary.endpoint
+output "gke_cluster_host" {
+  value       = google_container_cluster.gke.endpoint
   description = "GKE Cluster Host"
   sensitive   = true
 }
 
 output "artifact_registry_url" {
   value       = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.docker_repo.repository_id}"
-  description = "Full Artifact Registry URL"
+  description = "Artifact Registry URL"
+}
+
+output "kubernetes_namespace" {
+  value       = kubernetes_namespace.app.metadata[0].name
+  description = "Kubernetes Namespace"
+}
+
+output "app_service_account" {
+  value       = google_service_account.app_sa.email
+  description = "Application Service Account Email"
 }
