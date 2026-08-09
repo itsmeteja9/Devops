@@ -239,9 +239,10 @@ resource "helm_release" "app" {
   namespace = var.app_namespace
   version   = var.app_chart_version
   wait      = false
-  atomic    = false
-  replace   = true
-  skip_crds = true
+  atomic       = false
+  replace      = true
+  force_update = true
+  skip_crds    = true
 
   values = [
     yamlencode({
