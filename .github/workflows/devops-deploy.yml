@@ -274,12 +274,11 @@ jobs:
             --namespace ${{ env.APP_NAMESPACE }} \
             --set image.repository="${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}" \
             --set image.tag="${{ github.sha }}" \
-            --set serviceAccount.create=false \
-            --wait=false
+            --force --wait=false
 
       - name: Verify deployment
         run: |
-          kubectl rollout status deployment/${{ env.APP_NAME }} \
+          kubectl rollout status deployment/${{ env.APP_NAME }}-helm-demo \
             --namespace ${{ env.APP_NAMESPACE }} \
             --timeout=5m
 
