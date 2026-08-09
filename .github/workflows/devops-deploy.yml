@@ -242,11 +242,14 @@ jobs:
             --timeout=5m
 
       - name: Configure Datadog monitoring
-        if: ${{ secrets.DD_API_KEY != '' }}
         env:
-          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_API_KEY: ${{ secrets.DD_API_KEY || '' }}
           DD_SITE: ${{ vars.DD_SITE || 'datadoghq.com' }}
         run: |
+          if [ -z "$DD_API_KEY" ]; then
+            echo "⚠️ DD_API_KEY not configured, skipping Datadog setup"
+            exit 0
+          fi
           echo "📊 Configuring Datadog monitoring..."
           kubectl set env deployment/${{ env.APP_NAME }} \
             --namespace ${{ env.APP_NAMESPACE }} \
@@ -255,7 +258,7 @@ jobs:
             DD_SERVICE="${{ env.APP_NAME }}" \
             DD_VERSION="${{ github.sha }}" \
             DD_TRACE_ENABLED="true" \
-            DD_LOGS_ENABLED="true" || echo "⚠️ Datadog setup skipped"
+            DD_LOGS_ENABLED="true"
 
       - name: Display deployment info
         run: |
