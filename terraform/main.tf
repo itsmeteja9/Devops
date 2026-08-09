@@ -238,14 +238,14 @@ resource "google_artifact_registry_repository_iam_member" "registry_access" {
 
 # Deploy application with Helm (simple config, no cleanup complexity)
 resource "helm_release" "app" {
-  name             = "${var.app_name}-poc"
-  chart            = "../helm"
-  namespace        = var.app_namespace
-  version          = var.app_chart_version
-  wait             = false
-  skip_crds        = true
-  force_update     = true
-  cleanup_on_fail  = true
+  name            = "${var.app_name}-poc"
+  chart           = "../helm"
+  namespace       = var.app_namespace
+  version         = var.app_chart_version
+  wait            = false
+  skip_crds       = true
+  force_update    = true
+  cleanup_on_fail = true
 
   set {
     name  = "image.repository"
