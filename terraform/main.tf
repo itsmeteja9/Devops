@@ -196,7 +196,7 @@ resource "google_service_account_iam_member" "workload_identity" {
 resource "google_artifact_registry_repository_iam_member" "registry_access" {
   repository = data.google_artifact_registry_repository.docker_repo.name
   role       = "roles/artifactregistry.reader"
-  member     = "serviceAccount:${data.data.google_service_account.app_sa.email}"
+  member     = "serviceAccount:${data.google_service_account.app_sa.email}"
   location   = var.region
 }
 
