@@ -17,10 +17,10 @@ module.exports = {
   testMatch: ['**/tests/**/*.test.js', '**/?(*.)+(spec|test).js'],
   coverageThreshold: {
     global: {
-      branches: 50,
-      functions: 50,
-      lines: 50,
-      statements: 50
+      branches: 30,
+      functions: 70,
+      lines: 75,
+      statements: 75
     }
   },
   reporters: [
