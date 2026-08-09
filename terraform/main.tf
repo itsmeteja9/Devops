@@ -247,7 +247,7 @@ resource "helm_release" "app" {
   skip_crds = true
 
   provisioner "local-exec" {
-    when    = create_before_destroy
+    when    = create
     command = "helm delete ${var.app_name} -n ${var.app_namespace} --wait --ignore-not-found=true 2>/dev/null || true"
   }
 
