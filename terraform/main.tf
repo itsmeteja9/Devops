@@ -236,16 +236,9 @@ resource "google_artifact_registry_repository_iam_member" "registry_access" {
 #   }
 # }
 
-# Delete existing failed Helm release before creating new one
-resource "null_resource" "delete_failed_release" {
-  provisioner "local-exec" {
-    command = "helm delete ${var.app_name} -n ${var.app_namespace} --wait --ignore-not-found=true 2>/dev/null || true; sleep 15"
-  }
-}
-
 # Deploy application with Helm
 resource "helm_release" "app" {
-  name      = var.app_name
+  name      = "${var.app_name}-deployed"
   chart     = "../helm"
   namespace = var.app_namespace
   version   = var.app_chart_version
@@ -318,8 +311,7 @@ resource "helm_release" "app" {
   ]
 
   depends_on = [
-    google_artifact_registry_repository_iam_member.registry_access,
-    null_resource.delete_failed_release
+    google_artifact_registry_repository_iam_member.registry_access
   ]
 }
 
