@@ -196,7 +196,7 @@ resource "google_service_account_iam_member" "workload_identity" {
 resource "google_artifact_registry_repository_iam_member" "registry_access" {
   repository = data.google_artifact_registry_repository.docker_repo.name
   role       = "roles/artifactregistry.reader"
-  member     = "serviceAccount:${data.google_service_account.app_sa.email}"
+  member     = "serviceAccount:${data.data.google_service_account.app_sa.email}"
   location   = var.region
 }
 
@@ -218,7 +218,7 @@ resource "kubernetes_service_account" "app" {
     name      = "app-ksa"
     namespace = kubernetes_namespace.app.metadata[0].name
     annotations = {
-      "iam.gke.io/gcp-service-account" = google_service_account.app_sa.email
+      "iam.gke.io/gcp-service-account" = data.google_service_account.app_sa.email
     }
   }
 }
@@ -285,7 +285,7 @@ resource "helm_release" "app" {
         create = true
         name   = "app-ksa"
         annotations = {
-          "iam.gke.io/gcp-service-account" = google_service_account.app_sa.email
+          "iam.gke.io/gcp-service-account" = data.google_service_account.app_sa.email
         }
       }
 
@@ -319,7 +319,7 @@ output "gke_cluster_host" {
 }
 
 output "artifact_registry_url" {
-  value       = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.docker_repo.repository_id}"
+  value       = "${var.region}-docker.pkg.dev/${var.project_id}/${data.google_artifact_registry_repository.docker_repo.repository_id}"
   description = "Artifact Registry URL"
 }
 
@@ -329,6 +329,6 @@ output "kubernetes_namespace" {
 }
 
 output "app_service_account" {
-  value       = google_service_account.app_sa.email
+  value       = data.google_service_account.app_sa.email
   description = "Application Service Account Email"
 }
