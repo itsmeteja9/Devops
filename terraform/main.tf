@@ -239,7 +239,7 @@ resource "google_artifact_registry_repository_iam_member" "registry_access" {
 # Delete existing failed Helm release before creating new one
 resource "null_resource" "delete_failed_release" {
   provisioner "local-exec" {
-    command = "helm delete ${var.app_name} -n ${var.app_namespace} --force --no-hooks --ignore-not-found=true 2>/dev/null || true; sleep 5"
+    command = "helm delete ${var.app_name} -n ${var.app_namespace} --wait --ignore-not-found=true 2>/dev/null || true; sleep 15"
   }
 }
 
