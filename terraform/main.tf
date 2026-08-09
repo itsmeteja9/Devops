@@ -14,6 +14,11 @@ terraform {
       version = "~> 2.10"
     }
   }
+
+  backend "gcs" {
+    bucket = "devops-poc-1786236741-terraform-state"
+    prefix = "terraform/state"
+  }
 }
 
 provider "google" {
