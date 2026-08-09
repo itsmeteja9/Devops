@@ -198,10 +198,44 @@ jobs:
       - name: Push Docker image
         run: docker push "${{ steps.image.outputs.uri }}"
 
+  # Stage 2.5: Create Infrastructure with Terraform
+  terraform_apply:
+    name: Create GCP Infrastructure
+    needs: build_and_publish
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform init
+        run: terraform -chdir=terraform init -backend=false -input=false
+
+      - name: Terraform apply
+        run: terraform -chdir=terraform apply -auto-approve -input=false
+        env:
+          TF_VAR_project_id: ${{ env.GCP_PROJECT_ID }}
+          TF_VAR_region: ${{ env.GCP_REGION }}
+
   # Stage 3: Deploy to GKE
   deploy_gke:
     name: Deploy to GKE
-    needs: build_and_publish
+    needs: [build_and_publish, terraform_apply]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
