@@ -239,8 +239,8 @@ resource "helm_release" "app" {
   namespace = var.app_namespace
   version   = var.app_chart_version
   wait      = true
-  timeout   = 600
-  atomic    = true
+  timeout   = 1200
+  atomic    = false
   replace   = true
 
   values = [
