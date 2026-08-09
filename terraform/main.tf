@@ -245,10 +245,10 @@ resource "null_resource" "delete_failed_release" {
 
 # Deploy application with Helm
 resource "helm_release" "app" {
-  name         = var.app_name
-  chart        = "../helm"
-  namespace    = var.app_namespace
-  version      = var.app_chart_version
+  name      = var.app_name
+  chart     = "../helm"
+  namespace = var.app_namespace
+  version   = var.app_chart_version
   wait      = false
   atomic    = false
   skip_crds = true
