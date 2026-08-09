@@ -1,4 +1,4 @@
-project_id              = "YOUR_NEW_PROJECT_ID"
+project_id              = "devops-poc-1786236741"
 project_name            = "devops"
 region                  = "us-central1"
 environment             = "production"
