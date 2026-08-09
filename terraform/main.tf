@@ -221,16 +221,16 @@ resource "google_artifact_registry_repository_iam_member" "registry_access" {
 #   depends_on = [google_container_node_pool.primary]
 # }
 
-# Kubernetes Service Account
-resource "kubernetes_service_account" "app" {
-  metadata {
-    name      = "app-ksa"
-    namespace = var.app_namespace
-    annotations = {
-      "iam.gke.io/gcp-service-account" = data.google_service_account.app_sa.email
-    }
-  }
-}
+# Kubernetes Service Account - Created by Helm, skipping
+# resource "kubernetes_service_account" "app" {
+#   metadata {
+#     name      = "app-ksa"
+#     namespace = var.app_namespace
+#     annotations = {
+#       "iam.gke.io/gcp-service-account" = data.google_service_account.app_sa.email
+#     }
+#   }
+# }
 
 # Deploy application with Helm
 resource "helm_release" "app" {
@@ -310,7 +310,7 @@ resource "helm_release" "app" {
   ]
 
   depends_on = [
-    kubernetes_service_account.app
+    google_artifact_registry_repository_iam_member.registry_access
   ]
 }
 
