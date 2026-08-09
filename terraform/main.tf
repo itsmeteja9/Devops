@@ -251,7 +251,6 @@ resource "helm_release" "app" {
   version   = var.app_chart_version
   wait      = false
   atomic    = false
-  upgrade   = true
   skip_crds = true
 
   values = [
