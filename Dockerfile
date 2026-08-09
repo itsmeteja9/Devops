@@ -16,6 +16,8 @@ COPY --from=builder --chown=nonroot:nonroot /app/node_modules ./node_modules
 
 COPY --chown=nonroot:nonroot app.js server.js ./
 
+COPY --chown=nonroot:nonroot src ./src
+
 COPY --chown=nonroot:nonroot public ./public
 
 EXPOSE 8080
