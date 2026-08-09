@@ -7,12 +7,14 @@ module.exports = {
     '!dist/**',
     '!.terraform/**',
     '!jest.config.js',
-    '!server.js'
+    '!server.js',
+    '!public/**'
   ],
   coveragePathIgnorePatterns: [
     '/node_modules/',
     '/coverage/',
     '/.terraform/',
+    '/public/',
   ],
   testMatch: ['**/tests/**/*.test.js', '**/?(*.)+(spec|test).js'],
   coverageThreshold: {
