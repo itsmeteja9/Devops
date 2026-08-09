@@ -239,7 +239,10 @@ resource "google_artifact_registry_repository_iam_member" "registry_access" {
 # Clean up conflicting service account before Helm deployment
 resource "null_resource" "cleanup_service_account" {
   provisioner "local-exec" {
-    command = "kubectl delete serviceaccount app-ksa -n default --ignore-not-found=true || true"
+    command = <<-EOT
+      gcloud container clusters get-credentials ${var.cluster_name} --region ${var.region} --project ${var.project_id} 2>/dev/null || true
+      kubectl delete serviceaccount app-ksa -n default --ignore-not-found=true || true
+    EOT
   }
 }
 
