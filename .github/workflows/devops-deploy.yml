@@ -327,7 +327,7 @@ jobs:
 
           echo ""
           echo "=== Service External IP ==="
-          kubectl get svc ${{ env.APP_NAME }} -n ${{ env.APP_NAMESPACE }}
+          kubectl get svc ${{ env.APP_NAME }}-helm-demo -n ${{ env.APP_NAMESPACE }}
 
   # Stage 4: PR Validation (Pull Requests Only)
   pr_validation:
