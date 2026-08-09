@@ -307,7 +307,7 @@ jobs:
             exit 0
           fi
           echo "📊 Configuring Datadog monitoring..."
-          kubectl set env deployment/${{ env.APP_NAME }} \
+          kubectl set env deployment/${{ env.APP_NAME }}-helm-demo \
             --namespace ${{ env.APP_NAMESPACE }} \
             DD_API_KEY="$DD_API_KEY" \
             DD_SITE="$DD_SITE" \
