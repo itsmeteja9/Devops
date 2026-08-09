@@ -239,7 +239,7 @@ resource "google_artifact_registry_repository_iam_member" "registry_access" {
 # Clean up old Helm release
 resource "null_resource" "cleanup_old_release" {
   provisioner "local-exec" {
-    command = "helm delete devops-app -n default --wait --ignore-not-found=true 2>/dev/null || true"
+    command = "echo 'Checking Helm releases:' && helm list -n default || true; echo 'Deleting old release:' && helm delete devops-app -n default --no-hooks --ignore-not-found=true || true; sleep 10; echo 'Checking again:' && helm list -n default || true"
   }
 }
 
