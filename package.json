@@ -1,16 +1,40 @@
 {
-  "name": "helm-demo",
+  "name": "devops-poc-app",
   "version": "1.0.0",
-  "description": "Simple demo app for Helm deployment on GKE",
+  "description": "DevOps POC with SonarQube + Datadog",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "echo 'Running tests...' && exit 0"
+    "dev": "NODE_ENV=development node server.js",
+    "test": "jest --coverage --passWithNoTests",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "sonar": "sonar-scanner",
+    "lint": "eslint . --ext .js"
   },
+  "keywords": [
+    "devops",
+    "sonarqube",
+    "datadog",
+    "kubernetes",
+    "gke"
+  ],
+  "author": "DevOps Team",
+  "license": "MIT",
   "engines": {
-    "node": ">=20"
+    "node": ">=18"
   },
   "dependencies": {
-    "express": "^4.19.2"
+    "express": "^4.18.2",
+    "dd-trace": "^4.20.0",
+    "pino": "^8.17.2",
+    "pino-datadog": "^1.0.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-junit": "^16.0.0",
+    "supertest": "^6.3.3",
+    "sonarqube-scanner": "^3.2.0",
+    "eslint": "^8.54.0"
   }
 }
