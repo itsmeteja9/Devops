@@ -268,6 +268,16 @@ jobs:
         with:
           version: "latest"
 
+      - name: Create image pull secret
+        run: |
+          kubectl create secret docker-registry gcr-secret \
+            --docker-server=${{ env.GCP_REGION }}-docker.pkg.dev \
+            --docker-username=_json_key \
+            --docker-password="$(cat $GOOGLE_APPLICATION_CREDENTIALS)" \
+            --docker-email=user@example.com \
+            -n default \
+            --dry-run=client -o yaml | kubectl apply -f -
+
       - name: Clean up old service account
         run: |
           kubectl delete serviceaccount helm-demo-ksa -n default --ignore-not-found=true || true
@@ -278,6 +288,7 @@ jobs:
             --namespace ${{ env.APP_NAMESPACE }} \
             --set image.repository="${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}" \
             --set image.tag="${{ github.sha }}" \
+            --set imagePullSecrets[0].name=gcr-secret \
             --wait=false
 
       - name: Verify deployment
