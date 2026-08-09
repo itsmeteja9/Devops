@@ -13,6 +13,10 @@ terraform {
       source  = "hashicorp/helm"
       version = "~> 2.10"
     }
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.2"
+    }
   }
 
   # Backend configuration - enable after first successful deployment
@@ -232,6 +236,13 @@ resource "google_artifact_registry_repository_iam_member" "registry_access" {
 #   }
 # }
 
+# Delete existing failed Helm release before creating new one
+resource "null_resource" "delete_failed_release" {
+  provisioner "local-exec" {
+    command = "helm delete ${var.app_name} -n ${var.app_namespace} --ignore-not-found=true 2>/dev/null || true"
+  }
+}
+
 # Deploy application with Helm
 resource "helm_release" "app" {
   name         = var.app_name
@@ -309,7 +320,8 @@ resource "helm_release" "app" {
   ]
 
   depends_on = [
-    google_artifact_registry_repository_iam_member.registry_access
+    google_artifact_registry_repository_iam_member.registry_access,
+    null_resource.delete_failed_release
   ]
 }
 
