@@ -81,6 +81,16 @@ jobs:
           unzip -o ~/sonar-scanner.zip -d ~/
           echo "$HOME/sonar-scanner-6.1.0.4477-linux-x64/bin" >> $GITHUB_PATH
 
+      - name: Verify coverage report
+        run: |
+          if [ -f coverage/lcov.info ]; then
+            echo "✓ Coverage report found"
+            wc -l coverage/lcov.info
+          else
+            echo "⚠️ Coverage report not found"
+            ls -la coverage/ || echo "Coverage directory empty"
+          fi
+
       - name: Run SonarQube scan
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -92,11 +102,11 @@ jobs:
           fi
 
           sonar-scanner \
-            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY || 'devops-app' }} \
-            -Dsonar.projectName=$APP_NAME \
+            -Dsonar.projectKey=devops-poc-app \
+            -Dsonar.projectName=DevOps POC Application \
             -Dsonar.organization=${{ vars.SONAR_ORG || 'devops' }} \
             -Dsonar.sources=. \
-            -Dsonar.exclusions=node_modules/**,terraform/**,.github/**,tests/** \
+            -Dsonar.exclusions=node_modules/**,terraform/**,.github/**,.terraform/** \
             -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
             -Dsonar.coverage.exclusions=**/node_modules/**,**/tests/**,**/*.test.js,jest.config.js,server.js \
             -Dsonar.host.url=$SONAR_HOST_URL \
