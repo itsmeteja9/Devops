@@ -79,76 +79,91 @@ data "google_compute_subnetwork" "subnet" {
   project = var.project_id
 }
 
-# GKE Cluster
-resource "google_container_cluster" "gke" {
+# GKE Cluster - Already exists, skipping creation
+# resource "google_container_cluster" "gke" {
+#   name     = var.cluster_name
+#   location = var.region
+#
+#   remove_default_node_pool = true
+#   initial_node_count       = 1
+#
+#   network    = data.google_compute_network.vpc.name
+#   subnetwork = data.google_compute_subnetwork.subnet.name
+#
+#   workload_identity_config {
+#     workload_pool = "${var.project_id}.svc.id.goog"
+#   }
+#
+#   ip_allocation_policy {
+#     cluster_secondary_range_name  = "pods"
+#     services_secondary_range_name = "services"
+#   }
+#
+#   addons_config {
+#     http_load_balancing {
+#       disabled = false
+#     }
+#   }
+#
+#   depends_on = [google_project_service.required_apis]
+#
+#   lifecycle {
+#     create_before_destroy = true
+#   }
+# }
+
+# Reference existing GKE cluster
+data "google_container_cluster" "gke" {
   name     = var.cluster_name
   location = var.region
-
-  remove_default_node_pool = true
-  initial_node_count       = 1
-
-  network    = data.google_compute_network.vpc.name
-  subnetwork = data.google_compute_subnetwork.subnet.name
-
-  workload_identity_config {
-    workload_pool = "${var.project_id}.svc.id.goog"
-  }
-
-  ip_allocation_policy {
-    cluster_secondary_range_name  = "pods"
-    services_secondary_range_name = "services"
-  }
-
-  addons_config {
-    http_load_balancing {
-      disabled = false
-    }
-  }
-
-  depends_on = [google_project_service.required_apis]
-
-  lifecycle {
-    create_before_destroy = true
-  }
+  project  = var.project_id
 }
 
-# Node Pool
-resource "google_container_node_pool" "primary" {
+# Node Pool - Already exists, skipping creation
+# resource "google_container_node_pool" "primary" {
+#   name       = "${var.project_name}-pool"
+#   cluster    = google_container_cluster.gke.name
+#   location   = var.region
+#   node_count = var.node_count
+#
+#   autoscaling {
+#     min_node_count = var.min_nodes
+#     max_node_count = var.max_nodes
+#   }
+#
+#   management {
+#     auto_repair  = true
+#     auto_upgrade = true
+#   }
+#
+#   node_config {
+#     preemptible  = var.use_preemptible_nodes
+#     machine_type = var.machine_type
+#     disk_size_gb = var.disk_size
+#
+#     oauth_scopes = [
+#       "https://www.googleapis.com/auth/cloud-platform"
+#     ]
+#
+#     workload_metadata_config {
+#       mode = "GKE_METADATA"
+#     }
+#
+#     labels = {
+#       environment = var.environment
+#       managed_by  = "terraform"
+#     }
+#
+#     tags = ["gke-node", var.project_name]
+#   }
+# }
+
+# Reference existing node pool
+data "google_container_node_pool" "primary" {
   name       = "${var.project_name}-pool"
-  cluster    = google_container_cluster.gke.name
+  cluster    = var.cluster_name
   location   = var.region
-  node_count = var.node_count
-
-  autoscaling {
-    min_node_count = var.min_nodes
-    max_node_count = var.max_nodes
-  }
-
-  management {
-    auto_repair  = true
-    auto_upgrade = true
-  }
-
-  node_config {
-    preemptible  = var.use_preemptible_nodes
-    machine_type = var.machine_type
-    disk_size_gb = var.disk_size
-
-    oauth_scopes = [
-      "https://www.googleapis.com/auth/cloud-platform"
-    ]
-
-    workload_metadata_config {
-      mode = "GKE_METADATA"
-    }
-
-    labels = {
-      environment = var.environment
-      managed_by  = "terraform"
-    }
-
-    tags = ["gke-node", var.project_name]
-  }
+  project    = var.project_id
 }
 
 # Artifact Registry
@@ -301,7 +316,7 @@ resource "helm_release" "app" {
   ]
 
   depends_on = [
-    google_container_node_pool.primary,
+    data.google_container_node_pool.primary,
     kubernetes_service_account.app
   ]
 }
