@@ -266,12 +266,11 @@ jobs:
 
       - name: Deploy with Helm
         run: |
-          helm upgrade --install ${{ env.APP_NAME }} ./helm/${{ env.APP_NAME }} \
+          helm upgrade --install ${{ env.APP_NAME }} ./helm \
             --namespace ${{ env.APP_NAMESPACE }} \
             --set image.repository="${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}" \
             --set image.tag="${{ github.sha }}" \
-            --wait \
-            --timeout 5m
+            --wait=false
 
       - name: Verify deployment
         run: |
