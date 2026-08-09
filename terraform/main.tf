@@ -185,12 +185,12 @@ data "google_service_account" "app_sa" {
   project    = var.project_id
 }
 
-# Workload Identity Binding
-resource "google_service_account_iam_member" "workload_identity" {
-  service_account_id = data.google_service_account.app_sa.name
-  role               = "roles/iam.workloadIdentityUser"
-  member             = "serviceAccount:${var.project_id}.svc.id.goog[${var.app_namespace}/app-ksa]"
-}
+# Workload Identity Binding - Created by GKE cluster, skipping
+# resource "google_service_account_iam_member" "workload_identity" {
+#   service_account_id = data.google_service_account.app_sa.name
+#   role               = "roles/iam.workloadIdentityUser"
+#   member             = "serviceAccount:${var.project_id}.svc.id.goog[${var.app_namespace}/app-ksa]"
+# }
 
 # Artifact Registry read access
 resource "google_artifact_registry_repository_iam_member" "registry_access" {
@@ -200,17 +200,17 @@ resource "google_artifact_registry_repository_iam_member" "registry_access" {
   location   = var.region
 }
 
-# Kubernetes Namespace
-resource "kubernetes_namespace" "app" {
-  metadata {
-    name = var.app_namespace
-    labels = {
-      "app.kubernetes.io/name" = var.project_name
-    }
-  }
-
-  depends_on = [google_container_node_pool.primary]
-}
+# Kubernetes Namespace - Created automatically by GKE, skipping
+# resource "kubernetes_namespace" "app" {
+#   metadata {
+#     name = var.app_namespace
+#     labels = {
+#       "app.kubernetes.io/name" = var.project_name
+#     }
+#   }
+#
+#   depends_on = [google_container_node_pool.primary]
+# }
 
 # Kubernetes Service Account
 resource "kubernetes_service_account" "app" {
