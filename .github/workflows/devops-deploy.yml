@@ -274,6 +274,7 @@ jobs:
             --namespace ${{ env.APP_NAMESPACE }} \
             --set image.repository="${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}" \
             --set image.tag="${{ github.sha }}" \
+            --set serviceAccount.create=false \
             --wait=false
 
       - name: Verify deployment
