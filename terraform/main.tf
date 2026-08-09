@@ -246,6 +246,11 @@ resource "helm_release" "app" {
   atomic    = false
   skip_crds = true
 
+  provisioner "local-exec" {
+    when    = create_before_destroy
+    command = "helm delete ${var.app_name} -n ${var.app_namespace} --wait --ignore-not-found=true 2>/dev/null || true"
+  }
+
   values = [
     yamlencode({
       replicaCount = var.app_replicas
