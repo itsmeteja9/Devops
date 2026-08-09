@@ -207,13 +207,13 @@ resource "kubernetes_service_account" "app" {
 
 # Deploy application with Helm
 resource "helm_release" "app" {
-  name       = var.app_name
-  chart      = "../helm/${var.app_name}"
-  namespace  = kubernetes_namespace.app.metadata[0].name
-  version    = var.app_chart_version
-  wait       = true
-  timeout    = 600
-  atomic     = true
+  name      = var.app_name
+  chart     = "../helm/${var.app_name}"
+  namespace = kubernetes_namespace.app.metadata[0].name
+  version   = var.app_chart_version
+  wait      = true
+  timeout   = 600
+  atomic    = true
 
   values = [
     yamlencode({
