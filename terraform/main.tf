@@ -313,6 +313,10 @@ resource "helm_release" "app" {
   depends_on = [
     google_artifact_registry_repository_iam_member.registry_access
   ]
+
+  provisioner "local-exec" {
+    command = "kubectl delete serviceaccount app-ksa -n default --ignore-not-found=true"
+  }
 }
 
 # Outputs
