@@ -224,11 +224,8 @@ jobs:
         with:
           terraform_wrapper: false
 
-      - name: Terraform init (no backend)
+      - name: Terraform init
         run: terraform -chdir=terraform init -backend=false -input=false
-
-      - name: Terraform init (with backend)
-        run: terraform -chdir=terraform init -input=false -migrate-state
 
       - name: Terraform apply
         run: terraform -chdir=terraform apply -auto-approve -input=false

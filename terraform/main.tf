@@ -15,10 +15,11 @@ terraform {
     }
   }
 
-  backend "gcs" {
-    bucket = "devops-poc-1786236741-terraform-state"
-    prefix = "terraform/state"
-  }
+  # Backend configuration - enable after first successful deployment
+  # backend "gcs" {
+  #   bucket = "devops-poc-1786236741-terraform-state"
+  #   prefix = "terraform/state"
+  # }
 }
 
 provider "google" {
