@@ -241,6 +241,7 @@ resource "helm_release" "app" {
   wait      = true
   timeout   = 600
   atomic    = true
+  replace   = true
 
   values = [
     yamlencode({
