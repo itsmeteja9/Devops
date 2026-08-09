@@ -54,12 +54,13 @@ app.get('/api/info', (req, res) => {
 // Metrics endpoint
 app.get('/api/metrics', (req, res) => {
   logger.info('Metrics endpoint called');
+  const memUsage = process.memoryUsage();
   res.json({
     timestamp: new Date().toISOString(),
     memory: {
-      heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
-      heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
-      external: Math.round(process.memoryUsage().external / 1024 / 1024)
+      heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
+      heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
+      external: Math.round(memUsage.external / 1024 / 1024)
     },
     uptime: Math.round(process.uptime())
   });
@@ -68,24 +69,31 @@ app.get('/api/metrics', (req, res) => {
 // Demo endpoint for testing
 app.get('/api/demo', (req, res) => {
   logger.info('Demo endpoint called');
-  const delay = Math.random() * 100;
+  const maxDelay = 100;
+  const delay = Math.random() * maxDelay;
 
-  setTimeout(() => {
+  const timeoutId = setTimeout(() => {
     res.json({
       message: 'Demo response',
       delay: Math.round(delay),
       timestamp: new Date().toISOString()
     });
   }, delay);
+
+  req.on('close', () => {
+    clearTimeout(timeoutId);
+  });
 });
 
 // Error endpoint for testing error tracking
 app.get('/api/error', (req, res) => {
   logger.error('Error endpoint called - simulating error');
-  const err = new Error('This is a test error');
+  const errorMessage = 'This is a test error';
+  const err = new Error(errorMessage);
+  const isDevelopment = process.env.NODE_ENV === 'development';
   res.status(500).json({
     error: err.message,
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    stack: isDevelopment ? err.stack : undefined
   });
 });
 

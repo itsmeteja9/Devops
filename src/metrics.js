@@ -1,16 +1,26 @@
 const logger = require('./logger');
 
+const MAX_RESPONSE_TIMES = 1000;
+
 const metrics = {
   totalRequests: 0,
   totalErrors: 0,
   responseTimes: []
 };
 
+const recordResponseTime = (duration) => {
+  metrics.responseTimes.push(duration);
+  // Keep only last 1000 response times to prevent memory leak
+  if (metrics.responseTimes.length > MAX_RESPONSE_TIMES) {
+    metrics.responseTimes.shift();
+  }
+};
+
 const metricsMiddleware = (req, res, next) => {
   const startTime = Date.now();
 
   // Track request
-  metrics.totalRequests++;
+  metrics.totalRequests += 1;
 
   // Log request
   logger.info({
@@ -24,7 +34,7 @@ const metricsMiddleware = (req, res, next) => {
   const originalJson = res.json;
   res.json = function(data) {
     const duration = Date.now() - startTime;
-    metrics.responseTimes.push(duration);
+    recordResponseTime(duration);
 
     // Log response
     logger.info({
@@ -43,7 +53,7 @@ const metricsMiddleware = (req, res, next) => {
   const originalSend = res.send;
   res.send = function(data) {
     if (res.statusCode >= 400) {
-      metrics.totalErrors++;
+      metrics.totalErrors += 1;
     }
     return originalSend.call(this, data);
   };
