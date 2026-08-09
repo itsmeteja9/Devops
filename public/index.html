@@ -210,6 +210,166 @@
         </p>
       </section>
 
+      <section class="architecture-section">
+        <div class="architecture-heading">
+          <p class="kicker">COMPLETE DEVOPS ARCHITECTURE</p>
+          <h2>From Code to Production in One Pipeline</h2>
+          <p>End-to-end visibility: GitHub to GKE with integrated monitoring and security scanning</p>
+        </div>
+
+        <div class="architecture-container">
+          <svg class="architecture-diagram" viewBox="0 0 1400 600" xmlns="http://www.w3.org/2000/svg">
+            <!-- Background grid -->
+            <defs>
+              <linearGradient id="flowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#0871f9;stop-opacity:1" />
+                <stop offset="50%" style="stop-color:#7948ed;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#159447;stop-opacity:1" />
+              </linearGradient>
+              <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                <polygon points="0 0, 10 3, 0 6" fill="#0871f9" />
+              </marker>
+            </defs>
+
+            <!-- Main flow arrow -->
+            <path d="M 80 280 Q 350 250, 620 280 T 1320 280" stroke="url(#flowGradient)" stroke-width="3" fill="none" stroke-dasharray="5,5" opacity="0.6"/>
+
+            <!-- Stage 1: GitHub -->
+            <g class="arch-component">
+              <rect x="20" y="200" width="120" height="160" rx="12" fill="#ffffff" stroke="#0871f9" stroke-width="2"/>
+              <circle cx="80" cy="250" r="30" fill="#0871f9" opacity="0.1"/>
+              <text x="80" y="260" text-anchor="middle" font-size="28" fill="#0871f9">📝</text>
+              <text x="80" y="320" text-anchor="middle" font-size="13" font-weight="600" fill="#092a5c">GitHub</text>
+              <text x="80" y="345" text-anchor="middle" font-size="11" fill="#5d7899">Source Code</text>
+            </g>
+
+            <!-- Stage 2: GitHub Actions -->
+            <g class="arch-component">
+              <rect x="190" y="200" width="120" height="160" rx="12" fill="#ffffff" stroke="#0871f9" stroke-width="2"/>
+              <circle cx="250" cy="250" r="30" fill="#0871f9" opacity="0.1"/>
+              <text x="250" y="260" text-anchor="middle" font-size="28" fill="#0871f9">⚙️</text>
+              <text x="250" y="320" text-anchor="middle" font-size="13" font-weight="600" fill="#092a5c">GitHub Actions</text>
+              <text x="250" y="345" text-anchor="middle" font-size="11" fill="#5d7899">CI/CD Orchestration</text>
+            </g>
+
+            <!-- Stage 3: SonarQube -->
+            <g class="arch-component">
+              <rect x="360" y="200" width="120" height="160" rx="12" fill="#ffffff" stroke="#7948ed" stroke-width="2"/>
+              <circle cx="420" cy="250" r="30" fill="#7948ed" opacity="0.1"/>
+              <text x="420" y="260" text-anchor="middle" font-size="28" fill="#7948ed">🔍</text>
+              <text x="420" y="320" text-anchor="middle" font-size="13" font-weight="600" fill="#092a5c">SonarQube</text>
+              <text x="420" y="345" text-anchor="middle" font-size="11" fill="#5d7899">Code Quality & Security</text>
+            </g>
+
+            <!-- Stage 4: Terraform -->
+            <g class="arch-component">
+              <rect x="530" y="200" width="120" height="160" rx="12" fill="#ffffff" stroke="#7948ed" stroke-width="2"/>
+              <circle cx="590" cy="250" r="30" fill="#7948ed" opacity="0.1"/>
+              <text x="590" y="260" text-anchor="middle" font-size="28" fill="#7948ed">🏗️</text>
+              <text x="590" y="320" text-anchor="middle" font-size="13" font-weight="600" fill="#092a5c">Terraform</text>
+              <text x="590" y="345" text-anchor="middle" font-size="11" fill="#5d7899">Infrastructure as Code</text>
+            </g>
+
+            <!-- Stage 5: Docker & GAR -->
+            <g class="arch-component">
+              <rect x="700" y="200" width="120" height="160" rx="12" fill="#ffffff" stroke="#0ba8ae" stroke-width="2"/>
+              <circle cx="760" cy="250" r="30" fill="#0ba8ae" opacity="0.1"/>
+              <text x="760" y="260" text-anchor="middle" font-size="28" fill="#0ba8ae">🐳</text>
+              <text x="760" y="320" text-anchor="middle" font-size="13" font-weight="600" fill="#092a5c">Docker + GAR</text>
+              <text x="760" y="345" text-anchor="middle" font-size="11" fill="#5d7899">Build & Registry</text>
+            </g>
+
+            <!-- Stage 6: GKE -->
+            <g class="arch-component">
+              <rect x="870" y="200" width="120" height="160" rx="12" fill="#ffffff" stroke="#159447" stroke-width="2"/>
+              <circle cx="930" cy="250" r="30" fill="#159447" opacity="0.1"/>
+              <text x="930" y="260" text-anchor="middle" font-size="28" fill="#159447">☸️</text>
+              <text x="930" y="320" text-anchor="middle" font-size="13" font-weight="600" fill="#092a5c">GKE (Helm)</text>
+              <text x="930" y="345" text-anchor="middle" font-size="11" fill="#5d7899">Kubernetes Deployment</text>
+            </g>
+
+            <!-- Stage 7: Datadog -->
+            <g class="arch-component">
+              <rect x="1040" y="200" width="120" height="160" rx="12" fill="#ffffff" stroke="#159447" stroke-width="2"/>
+              <circle cx="1100" cy="250" r="30" fill="#159447" opacity="0.1"/>
+              <text x="1100" y="260" text-anchor="middle" font-size="28" fill="#159447">📊</text>
+              <text x="1100" y="320" text-anchor="middle" font-size="13" font-weight="600" fill="#092a5c">Datadog</text>
+              <text x="1100" y="345" text-anchor="middle" font-size="11" fill="#5d7899">Monitoring & APM</text>
+            </g>
+
+            <!-- Stage 8: Application -->
+            <g class="arch-component">
+              <rect x="1210" y="200" width="120" height="160" rx="12" fill="#ffffff" stroke="#159447" stroke-width="2"/>
+              <circle cx="1270" cy="250" r="30" fill="#159447" opacity="0.1"/>
+              <text x="1270" y="260" text-anchor="middle" font-size="28" fill="#159447">🚀</text>
+              <text x="1270" y="320" text-anchor="middle" font-size="13" font-weight="600" fill="#092a5c">Live App</text>
+              <text x="1270" y="345" text-anchor="middle" font-size="11" fill="#5d7899">Production Ready</text>
+            </g>
+
+            <!-- Data flow labels -->
+            <text x="135" y="190" font-size="11" fill="#5d7899" font-weight="500">Push</text>
+            <text x="275" y="190" font-size="11" fill="#5d7899" font-weight="500">Build</text>
+            <text x="445" y="190" font-size="11" fill="#5d7899" font-weight="500">Test & Scan</text>
+            <text x="615" y="190" font-size="11" fill="#5d7899" font-weight="500">Plan & Apply</text>
+            <text x="785" y="190" font-size="11" fill="#5d7899" font-weight="500">Build & Push</text>
+            <text x="955" y="190" font-size="11" fill="#5d7899" font-weight="500">Deploy</text>
+            <text x="1125" y="190" font-size="11" fill="#5d7899" font-weight="500">Monitor</text>
+
+            <!-- Bottom annotations -->
+            <g class="arch-annotations">
+              <rect x="50" y="450" width="200" height="100" rx="8" fill="#e9f1ff" stroke="#0871f9" stroke-width="1"/>
+              <text x="150" y="475" text-anchor="middle" font-size="12" font-weight="600" fill="#0871f9">Source Control</text>
+              <text x="60" y="495" font-size="10" fill="#385f90">• Version control</text>
+              <text x="60" y="510" font-size="10" fill="#385f90">• Pull requests</text>
+              <text x="60" y="525" font-size="10" fill="#385f90">• Commit tracking</text>
+
+              <rect x="300" y="450" width="200" height="100" rx="8" fill="#f0eafd" stroke="#7948ed" stroke-width="1"/>
+              <text x="400" y="475" text-anchor="middle" font-size="12" font-weight="600" fill="#7948ed">Quality & Security</text>
+              <text x="310" y="495" font-size="10" fill="#385f90">• Unit tests (92%)</text>
+              <text x="310" y="510" font-size="10" fill="#385f90">• SonarQube scan</text>
+              <text x="310" y="525" font-size="10" fill="#385f90">• Trivy scan</text>
+
+              <rect x="550" y="450" width="200" height="100" rx="8" fill="#e4f7f7" stroke="#0ba8ae" stroke-width="1"/>
+              <text x="650" y="475" text-anchor="middle" font-size="12" font-weight="600" fill="#0ba8ae">Build & Registry</text>
+              <text x="560" y="495" font-size="10" fill="#385f90">• Docker multi-stage</text>
+              <text x="560" y="510" font-size="10" fill="#385f90">• Artifact Registry</text>
+              <text x="560" y="525" font-size="10" fill="#385f90">• Image versioning</text>
+
+              <rect x="800" y="450" width="200" height="100" rx="8" fill="#e7f6eb" stroke="#159447" stroke-width="1"/>
+              <text x="900" y="475" text-anchor="middle" font-size="12" font-weight="600" fill="#159447">Deployment</text>
+              <text x="810" y="495" font-size="10" fill="#385f90">• Terraform IaC</text>
+              <text x="810" y="510" font-size="10" fill="#385f90">• Helm charts</text>
+              <text x="810" y="525" font-size="10" fill="#385f90">• GKE cluster</text>
+
+              <rect x="1050" y="450" width="200" height="100" rx="8" fill="#e7f6eb" stroke="#159447" stroke-width="1"/>
+              <text x="1150" y="475" text-anchor="middle" font-size="12" font-weight="600" fill="#159447">Observability</text>
+              <text x="1060" y="495" font-size="10" fill="#385f90">• Datadog APM</text>
+              <text x="1060" y="510" font-size="10" fill="#385f90">• Log aggregation</text>
+              <text x="1060" y="525" font-size="10" fill="#385f90">• Real-time alerts</text>
+            </g>
+          </svg>
+        </div>
+
+        <div class="architecture-info">
+          <div class="info-card">
+            <h3>🔄 Continuous Integration</h3>
+            <p>On every push to main, GitHub Actions automatically runs unit tests, code quality checks with SonarQube, and validates Terraform configuration.</p>
+          </div>
+          <div class="info-card">
+            <h3>📦 Artifact Management</h3>
+            <p>Docker builds a containerized application and pushes to Google Artifact Registry with automatic versioning based on commit SHA.</p>
+          </div>
+          <div class="info-card">
+            <h3>☸️ Infrastructure as Code</h3>
+            <p>Terraform manages all GCP resources including VPCs, GKE clusters, service accounts, and IAM permissions—all version controlled.</p>
+          </div>
+          <div class="info-card">
+            <h3>📊 Observability</h3>
+            <p>Datadog APM automatically instruments the application in GKE, providing real-time traces, metrics, and logs for complete visibility.</p>
+          </div>
+        </div>
+      </section>
+
       <footer>
         <div>
           <span class="brand-badge">DevOps Demo</span>
