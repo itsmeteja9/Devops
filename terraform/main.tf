@@ -30,16 +30,16 @@ provider "google" {
 data "google_client_config" "default" {}
 
 provider "kubernetes" {
-  host                   = "https://${google_container_cluster.gke.endpoint}"
+  host                   = "https://${data.google_container_cluster.gke.endpoint}"
   token                  = data.google_client_config.default.access_token
-  cluster_ca_certificate = base64decode(google_container_cluster.gke.master_auth[0].cluster_ca_certificate)
+  cluster_ca_certificate = base64decode(data.google_container_cluster.gke.master_auth[0].cluster_ca_certificate)
 }
 
 provider "helm" {
   kubernetes {
-    host                   = "https://${google_container_cluster.gke.endpoint}"
+    host                   = "https://${data.google_container_cluster.gke.endpoint}"
     token                  = data.google_client_config.default.access_token
-    cluster_ca_certificate = base64decode(google_container_cluster.gke.master_auth[0].cluster_ca_certificate)
+    cluster_ca_certificate = base64decode(data.google_container_cluster.gke.master_auth[0].cluster_ca_certificate)
   }
 }
 
@@ -158,13 +158,7 @@ data "google_container_cluster" "gke" {
 #   }
 # }
 
-# Reference existing node pool
-data "google_container_node_pool" "primary" {
-  name     = "${var.project_name}-pool"
-  cluster  = var.cluster_name
-  location = var.region
-  project  = var.project_id
-}
+# Node pool is managed by GKE cluster, skipping reference
 
 # Artifact Registry
 # Artifact Registry - Already exists, skipping creation
@@ -316,19 +310,18 @@ resource "helm_release" "app" {
   ]
 
   depends_on = [
-    data.google_container_node_pool.primary,
     kubernetes_service_account.app
   ]
 }
 
 # Outputs
 output "gke_cluster_name" {
-  value       = google_container_cluster.gke.name
+  value       = data.google_container_cluster.gke.name
   description = "GKE Cluster Name"
 }
 
 output "gke_cluster_host" {
-  value       = google_container_cluster.gke.endpoint
+  value       = data.google_container_cluster.gke.endpoint
   description = "GKE Cluster Host"
   sensitive   = true
 }
