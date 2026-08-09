@@ -160,10 +160,10 @@ data "google_container_cluster" "gke" {
 
 # Reference existing node pool
 data "google_container_node_pool" "primary" {
-  name       = "${var.project_name}-pool"
-  cluster    = var.cluster_name
-  location   = var.region
-  project    = var.project_id
+  name     = "${var.project_name}-pool"
+  cluster  = var.cluster_name
+  location = var.region
+  project  = var.project_id
 }
 
 # Artifact Registry
