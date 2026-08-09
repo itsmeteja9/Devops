@@ -236,90 +236,29 @@ resource "google_artifact_registry_repository_iam_member" "registry_access" {
 #   }
 # }
 
-# Clean up old Helm release
-resource "null_resource" "cleanup_old_release" {
-  provisioner "local-exec" {
-    command = "echo 'Checking Helm releases:' && helm list -n default || true; echo 'Deleting old release:' && helm delete devops-app -n default --no-hooks --ignore-not-found=true || true; sleep 10; echo 'Checking again:' && helm list -n default || true"
-  }
-}
-
-# Deploy application with Helm
+# Deploy application with Helm (simple config, no cleanup complexity)
 resource "helm_release" "app" {
-  name      = "${var.app_name}-deployed"
-  chart     = "../helm"
-  namespace = var.app_namespace
-  version   = var.app_chart_version
-  wait      = false
-  atomic    = false
-  skip_crds = true
+  name             = "${var.app_name}-poc"
+  chart            = "../helm"
+  namespace        = var.app_namespace
+  version          = var.app_chart_version
+  wait             = false
+  skip_crds        = true
+  force_update     = true
+  cleanup_on_fail  = true
 
-  values = [
-    yamlencode({
-      replicaCount = var.app_replicas
+  set {
+    name  = "image.repository"
+    value = "${var.region}-docker.pkg.dev/${var.project_id}/${var.artifact_registry_repo}/${var.app_name}"
+  }
 
-      image = {
-        repository = "${var.region}-docker.pkg.dev/${var.project_id}/${var.artifact_registry_repo}/${var.app_name}"
-        tag        = var.app_image_tag
-        pullPolicy = "IfNotPresent"
-      }
-
-      service = {
-        type = var.service_type
-        port = var.app_port
-      }
-
-      ingress = {
-        enabled = var.enable_ingress
-      }
-
-      resources = {
-        limits = {
-          cpu    = var.container_cpu_limit
-          memory = var.container_memory_limit
-        }
-        requests = {
-          cpu    = var.container_cpu_request
-          memory = var.container_memory_request
-        }
-      }
-
-      autoscaling = {
-        enabled          = var.enable_autoscaling
-        minReplicas      = var.app_min_replicas
-        maxReplicas      = var.app_max_replicas
-        targetCPUPercent = var.target_cpu_utilization
-      }
-
-      env = [
-        {
-          name  = "NODE_ENV"
-          value = var.environment
-        },
-        {
-          name  = "LOG_LEVEL"
-          value = var.log_level
-        }
-      ]
-
-      serviceAccount = {
-        create = false
-        name   = "default"
-      }
-
-      monitoring = {
-        enabled = var.enable_monitoring
-      }
-
-      securityContext = {
-        runAsNonRoot = true
-        runAsUser    = 65534
-      }
-    })
-  ]
+  set {
+    name  = "image.tag"
+    value = var.app_image_tag
+  }
 
   depends_on = [
-    google_artifact_registry_repository_iam_member.registry_access,
-    null_resource.cleanup_old_release
+    google_artifact_registry_repository_iam_member.registry_access
   ]
 }
 
