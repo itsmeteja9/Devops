@@ -10,7 +10,7 @@ serviceAccount:
   name: helm-demo-ksa
 
 service:
-  type: ClusterIP
+  type: LoadBalancer
   port: 80
   targetPort: 8080
 
