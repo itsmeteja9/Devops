@@ -56,31 +56,27 @@ resource "google_project_service" "required_apis" {
   disable_on_destroy = false
 }
 
-# VPC Network
-resource "google_compute_network" "vpc" {
-  name                    = "${var.project_name}-vpc"
-  auto_create_subnetworks = false
-  project                 = var.project_id
+# VPC Network - Already exists, skipping creation
+# TODO: Import existing VPC into terraform state
+# resource "google_compute_network" "vpc" {
+#   name                    = "${var.project_name}-vpc"
+#   auto_create_subnetworks = false
+#   project                 = var.project_id
+#
+#   depends_on = [google_project_service.required_apis]
+# }
 
-  depends_on = [google_project_service.required_apis]
+# Reference existing VPC
+data "google_compute_network" "vpc" {
+  name    = "devops-vpc"
+  project = var.project_id
 }
 
-# Subnet with secondary ranges for pods and services
-resource "google_compute_subnetwork" "subnet" {
-  name          = "${var.project_name}-subnet"
-  ip_cidr_range = var.subnet_cidr
-  region        = var.region
-  network       = google_compute_network.vpc.id
-
-  secondary_ip_range {
-    range_name    = "pods"
-    ip_cidr_range = var.pods_cidr
-  }
-
-  secondary_ip_range {
-    range_name    = "services"
-    ip_cidr_range = var.services_cidr
-  }
+# Reference existing subnet
+data "google_compute_subnetwork" "subnet" {
+  name    = "devops-subnet"
+  region  = var.region
+  project = var.project_id
 }
 
 # GKE Cluster
@@ -91,8 +87,8 @@ resource "google_container_cluster" "gke" {
   remove_default_node_pool = true
   initial_node_count       = 1
 
-  network    = google_compute_network.vpc.name
-  subnetwork = google_compute_subnetwork.subnet.name
+  network    = data.google_compute_network.vpc.name
+  subnetwork = data.google_compute_subnetwork.subnet.name
 
   workload_identity_config {
     workload_pool = "${var.project_id}.svc.id.goog"
@@ -156,35 +152,51 @@ resource "google_container_node_pool" "primary" {
 }
 
 # Artifact Registry
-resource "google_artifact_registry_repository" "docker_repo" {
+# Artifact Registry - Already exists, skipping creation
+# TODO: Import existing repository into terraform state
+# resource "google_artifact_registry_repository" "docker_repo" {
+#   location      = var.region
+#   repository_id = var.artifact_registry_repo
+#   description   = "Docker images for ${var.project_name}"
+#   format        = "DOCKER"
+#   project       = var.project_id
+#
+#   depends_on = [google_project_service.required_apis]
+# }
+
+# Reference existing Artifact Registry
+data "google_artifact_registry_repository" "docker_repo" {
   location      = var.region
   repository_id = var.artifact_registry_repo
-  description   = "Docker images for ${var.project_name}"
-  format        = "DOCKER"
   project       = var.project_id
-
-  depends_on = [google_project_service.required_apis]
 }
 
-# Service Account for applications
-resource "google_service_account" "app_sa" {
-  account_id   = "${var.project_name}-app"
-  display_name = "Application Service Account"
-  project      = var.project_id
+# Service Account for applications - Already exists, skipping creation
+# TODO: Import existing service account into terraform state
+# resource "google_service_account" "app_sa" {
+#   account_id   = "${var.project_name}-app"
+#   display_name = "Application Service Account"
+#   project      = var.project_id
+# }
+
+# Reference existing service account
+data "google_service_account" "app_sa" {
+  account_id = "devops-app"
+  project    = var.project_id
 }
 
 # Workload Identity Binding
 resource "google_service_account_iam_member" "workload_identity" {
-  service_account_id = google_service_account.app_sa.name
+  service_account_id = data.google_service_account.app_sa.name
   role               = "roles/iam.workloadIdentityUser"
   member             = "serviceAccount:${var.project_id}.svc.id.goog[${var.app_namespace}/app-ksa]"
 }
 
 # Artifact Registry read access
 resource "google_artifact_registry_repository_iam_member" "registry_access" {
-  repository = google_artifact_registry_repository.docker_repo.name
+  repository = data.google_artifact_registry_repository.docker_repo.name
   role       = "roles/artifactregistry.reader"
-  member     = "serviceAccount:${google_service_account.app_sa.email}"
+  member     = "serviceAccount:${data.google_service_account.app_sa.email}"
   location   = var.region
 }
 
