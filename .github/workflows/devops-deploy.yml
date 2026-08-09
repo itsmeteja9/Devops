@@ -264,10 +264,6 @@ jobs:
         with:
           version: "latest"
 
-      - name: Create namespace
-        run: |
-          kubectl create namespace ${{ env.APP_NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f - --validate=false
-
       - name: Deploy with Helm
         run: |
           helm upgrade --install ${{ env.APP_NAME }} ./helm/${{ env.APP_NAME }} \
