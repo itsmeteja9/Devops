@@ -6,6 +6,7 @@ const stages = [
     summary: 'A pull request checks the change; a merge to main starts delivery.',
     color: 'blue',
     icon: 'code',
+    emoji: '📝',
     input: 'Pull request or push',
     action: 'Check out the repository and capture the immutable GitHub commit SHA.',
     output: 'Commit SHA',
@@ -17,6 +18,7 @@ const stages = [
     summary: 'Tests, SonarQube, security scanning, and Terraform validation run in parallel.',
     color: 'purple',
     icon: 'shield',
+    emoji: '✓',
     input: 'Application, lockfile, Dockerfile, and Terraform',
     action: 'Run Node.js tests, SonarQube scan, Trivy, terraform fmt, and terraform validate.',
     output: 'Approved commit',
@@ -28,6 +30,7 @@ const stages = [
     summary: 'Terraform enables APIs and ensures the Artifact Registry repository exists.',
     color: 'purple',
     icon: 'terraform',
+    emoji: '🏗️',
     input: 'Validated Terraform and remote state',
     action: 'Authenticate to GCP and create or reconcile the regional GAR repository.',
     output: 'GAR endpoint',
@@ -39,6 +42,7 @@ const stages = [
     summary: 'Build the commit-tagged image, scan it with Trivy, then publish it to GAR.',
     color: 'teal',
     icon: 'cube',
+    emoji: '🐳',
     input: 'Approved source and Dockerfile',
     action: 'Build, scan for high or critical findings, and push only an approved image.',
     output: 'Versioned artifact',
@@ -50,6 +54,7 @@ const stages = [
     summary: 'Terraform deploys the exact scanned image to GKE and returns the service URL.',
     color: 'green',
     icon: 'cloud',
+    emoji: '☸️',
     input: 'GAR image URI',
     action: 'Create or update Helm release and route traffic to the new pods.',
     output: 'HTTPS service URL',
@@ -61,6 +66,7 @@ const stages = [
     summary: 'Smoke tests verify the health endpoint and the live application page.',
     color: 'green',
     icon: 'shield',
+    emoji: '✅',
     input: 'GKE service URL',
     action: 'Call /health, check the application content, and publish the run summary.',
     output: 'Verified deployment',
@@ -127,7 +133,7 @@ function renderStages() {
           aria-pressed="${selected}"
         >
           <span class="stage-number">${stage.number}</span>
-          <span class="stage-circle">${icon(stage.icon)}</span>
+          <span class="stage-circle">${stage.emoji}</span>
           <span class="stage-label">${stage.name}</span>
           <span class="stage-status" aria-label="Status: ${status}">${statusText}</span>
           <span class="stage-callout">${stage.eyebrow}</span>
