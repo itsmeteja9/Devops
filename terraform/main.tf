@@ -235,7 +235,7 @@ resource "kubernetes_service_account" "app" {
 # Deploy application with Helm
 resource "helm_release" "app" {
   name      = var.app_name
-  chart     = "../helm/${var.app_name}"
+  chart     = "./helm/${var.app_name}"
   namespace = var.app_namespace
   version   = var.app_chart_version
   wait      = true
