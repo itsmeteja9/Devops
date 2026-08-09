@@ -224,17 +224,17 @@ jobs:
         with:
           terraform_wrapper: false
 
-      - name: Terraform init
-        run: terraform -chdir=terraform init -input=false
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file }}
+      - name: Terraform init (no backend)
+        run: terraform -chdir=terraform init -backend=false -input=false
+
+      - name: Terraform init (with backend)
+        run: terraform -chdir=terraform init -input=false -migrate-state
 
       - name: Terraform apply
         run: terraform -chdir=terraform apply -auto-approve -input=false
         env:
           TF_VAR_project_id: ${{ env.GCP_PROJECT_ID }}
           TF_VAR_region: ${{ env.GCP_REGION }}
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file }}
 
   # Stage 3: Deploy to GKE
   deploy_gke:
