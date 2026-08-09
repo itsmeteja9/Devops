@@ -13,10 +13,6 @@ terraform {
       source  = "hashicorp/helm"
       version = "~> 2.10"
     }
-    null = {
-      source  = "hashicorp/null"
-      version = "~> 3.2"
-    }
   }
 
   # Backend configuration - enable after first successful deployment
@@ -236,16 +232,6 @@ resource "google_artifact_registry_repository_iam_member" "registry_access" {
 #   }
 # }
 
-# Clean up conflicting service account before Helm deployment
-resource "null_resource" "cleanup_service_account" {
-  provisioner "local-exec" {
-    command = <<-EOT
-      gcloud container clusters get-credentials ${var.cluster_name} --region ${var.region} --project ${var.project_id} 2>/dev/null || true
-      kubectl delete serviceaccount app-ksa -n default --ignore-not-found=true || true
-    EOT
-  }
-}
-
 # Deploy application with Helm
 resource "helm_release" "app" {
   name      = var.app_name
@@ -306,11 +292,8 @@ resource "helm_release" "app" {
       ]
 
       serviceAccount = {
-        create = true
-        name   = "app-ksa"
-        annotations = {
-          "iam.gke.io/gcp-service-account" = data.google_service_account.app_sa.email
-        }
+        create = false
+        name   = "default"
       }
 
       monitoring = {
@@ -325,8 +308,7 @@ resource "helm_release" "app" {
   ]
 
   depends_on = [
-    google_artifact_registry_repository_iam_member.registry_access,
-    null_resource.cleanup_service_account
+    google_artifact_registry_repository_iam_member.registry_access
   ]
 }
 
