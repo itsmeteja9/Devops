@@ -235,7 +235,7 @@ resource "google_artifact_registry_repository_iam_member" "registry_access" {
 # Deploy application with Helm
 resource "helm_release" "app" {
   name      = var.app_name
-  chart     = "./helm"
+  chart     = "../helm"
   namespace = var.app_namespace
   version   = var.app_chart_version
   wait      = true
