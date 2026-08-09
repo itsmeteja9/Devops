@@ -69,13 +69,13 @@ app.get('/api/metrics', (req, res) => {
 // Demo endpoint for testing
 app.get('/api/demo', (req, res) => {
   logger.info('Demo endpoint called');
-  const maxDelay = 100;
-  const delay = Math.random() * maxDelay;
+  // Use fixed delay for demo endpoint - not a security context
+  const delay = 50;
 
   const timeoutId = setTimeout(() => {
     res.json({
       message: 'Demo response',
-      delay: Math.round(delay),
+      delay,
       timestamp: new Date().toISOString()
     });
   }, delay);
