@@ -23,15 +23,17 @@ const PORT = process.env.PORT || 8080;
 // Initialize database on startup
 const startServer = async () => {
   try {
-    // Initialize database tables
-    await initDatabase();
-
-    // Record deployment
-    await recordDeployment(
-      process.env.DD_VERSION || 'unknown',
-      process.env.NODE_ENV || 'production',
-      'started'
-    );
+    // Initialize database tables only if database is configured
+    if (process.env.DATABASE_HOST) {
+      await initDatabase();
+      await recordDeployment(
+        process.env.DD_VERSION || 'unknown',
+        process.env.NODE_ENV || 'production',
+        'started'
+      );
+    } else {
+      logger.info('Database not configured - skipping initialization');
+    }
 
     const server = app.listen(PORT, () => {
       logger.info({

@@ -4,26 +4,38 @@ const secrets = require('./secrets');
 
 const dbConfig = secrets.getDatabaseConfig();
 
-const pool = new Pool({
-  host: dbConfig.host,
-  port: dbConfig.port,
-  database: dbConfig.database,
-  user: dbConfig.user,
-  password: dbConfig.password,
-  ssl: dbConfig.ssl,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-});
+let pool = null;
 
-pool.on('error', (err) => {
-  logger.error({ msg: 'Unexpected error on idle client', error: err.message });
-});
+// Only create pool if database is configured
+if (dbConfig.host) {
+  pool = new Pool({
+    host: dbConfig.host,
+    port: dbConfig.port,
+    database: dbConfig.database,
+    user: dbConfig.user,
+    password: dbConfig.password,
+    ssl: dbConfig.ssl,
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
+  });
+
+  pool.on('error', (err) => {
+    logger.error({ msg: 'Unexpected error on idle client', error: err.message });
+  });
+} else {
+  logger.info('Database not configured - pool not initialized');
+}
 
 /**
  * Initialize database tables on startup
  */
 const initDatabase = async () => {
+  if (!pool) {
+    logger.info('Database not configured - skipping initialization');
+    return;
+  }
+
   const client = await pool.connect();
   try {
     logger.info({ msg: 'Initializing database...' });
@@ -77,6 +89,7 @@ const initDatabase = async () => {
  * Record a metric
  */
 const recordMetric = async (endpoint, method, statusCode, responseTime) => {
+  if (!pool) return;
   try {
     await pool.query(
       `INSERT INTO metrics (endpoint, method, status_code, response_time_ms)
@@ -92,6 +105,7 @@ const recordMetric = async (endpoint, method, statusCode, responseTime) => {
  * Record a deployment
  */
 const recordDeployment = async (version, environment, status) => {
+  if (!pool) return;
   try {
     await pool.query(
       `INSERT INTO deployments (version, environment, status)
@@ -108,6 +122,7 @@ const recordDeployment = async (version, environment, status) => {
  * Get metrics from database
  */
 const getMetrics = async (limit = 100) => {
+  if (!pool) return [];
   try {
     const result = await pool.query(
       `SELECT * FROM metrics ORDER BY timestamp DESC LIMIT $1`,
@@ -124,6 +139,7 @@ const getMetrics = async (limit = 100) => {
  * Get recent deployments
  */
 const getDeployments = async (limit = 10) => {
+  if (!pool) return [];
   try {
     const result = await pool.query(
       `SELECT * FROM deployments ORDER BY deployed_at DESC LIMIT $1`,
@@ -140,6 +156,9 @@ const getDeployments = async (limit = 10) => {
  * Check database health
  */
 const checkHealth = async () => {
+  if (!pool) {
+    return { status: 'not-configured' };
+  }
   try {
     const result = await pool.query('SELECT NOW()');
     return { status: 'connected', timestamp: result.rows[0].now };
