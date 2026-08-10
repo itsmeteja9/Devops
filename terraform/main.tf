@@ -253,17 +253,7 @@ resource "google_project_service" "secretmanager" {
   disable_on_destroy = false
 }
 
-# Enable Cloud SQL API
-resource "google_project_service" "cloudsql" {
-  service            = "sqladmin.googleapis.com"
-  disable_on_destroy = false
-}
-
-# Generate random password for database
-resource "random_password" "db_password" {
-  length  = 32
-  special = true
-}
+# Cloud SQL API and password generation removed for now - Phase 3
 
 # Store database password in Secret Manager
 resource "google_secret_manager_secret" "db_password" {
@@ -281,10 +271,7 @@ resource "google_secret_manager_secret" "db_password" {
   depends_on = [google_project_service.secretmanager]
 }
 
-resource "google_secret_manager_secret_version" "db_password" {
-  secret      = google_secret_manager_secret.db_password.id
-  secret_data = random_password.db_password.result
-}
+# Secret version removed - will recreate in Phase 3 with actual password
 
 # Grant GKE service account access to database password secret
 resource "google_secret_manager_secret_iam_member" "db_password_access" {
@@ -293,66 +280,8 @@ resource "google_secret_manager_secret_iam_member" "db_password_access" {
   member    = "serviceAccount:${data.google_service_account.app_sa.email}"
 }
 
-# Cloud SQL Instance (PostgreSQL)
-resource "google_sql_database_instance" "postgres" {
-  name             = "devops-db-${var.region}"
-  database_version = "POSTGRES_15"
-  region           = var.region
-
-  settings {
-    tier              = "db-f1-micro"
-    availability_type = "REGIONAL"
-    disk_size         = 20
-    disk_type         = "PD_SSD"
-
-    backup_configuration {
-      enabled    = true
-      start_time = "03:00"
-      backup_retention_settings {
-        retained_backups = 30
-        retention_unit   = "COUNT"
-      }
-    }
-
-    database_flags {
-      name  = "max_connections"
-      value = "100"
-    }
-
-    ip_configuration {
-      ssl_mode = "ENCRYPTED_ONLY"
-    }
-
-    maintenance_window {
-      day          = 6
-      hour         = 3
-      update_track = "stable"
-    }
-  }
-
-  deletion_protection = false
-  depends_on          = [google_project_service.cloudsql]
-}
-
-# Database
-resource "google_sql_database" "devops_db" {
-  name     = "devops_db"
-  instance = google_sql_database_instance.postgres.name
-}
-
-# Database user
-resource "google_sql_user" "app_user" {
-  name     = "devops_app"
-  instance = google_sql_database_instance.postgres.name
-  password = random_password.db_password.result
-}
-
-# Grant GKE service account Cloud SQL access
-resource "google_project_iam_member" "cloudsql_client" {
-  project = var.project_id
-  role    = "roles/cloudsql.client"
-  member  = "serviceAccount:${data.google_service_account.app_sa.email}"
-}
+# Cloud SQL resources commented out for Phase 3
+# To be added back later with proper configuration
 
 # Outputs
 output "gke_cluster_name" {
@@ -381,15 +310,7 @@ output "app_service_account" {
   description = "Application Service Account Email"
 }
 
-output "cloudsql_connection_name" {
-  value       = google_sql_database_instance.postgres.connection_name
-  description = "Cloud SQL Connection Name for Cloud SQL Proxy"
-}
-
-output "cloudsql_instance_name" {
-  value       = google_sql_database_instance.postgres.name
-  description = "Cloud SQL Instance Name"
-}
+# Cloud SQL outputs removed - will be added in Phase 3
 
 output "db_password_secret" {
   value       = google_secret_manager_secret.db_password.id
