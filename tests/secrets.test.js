@@ -169,7 +169,7 @@ describe('Secrets Module', () => {
     it('should support Kubernetes mounted secrets', () => {
       // Simulate Kubernetes secret mount
       const result = loadSecret('/var/secrets/db-password', 'DB_PASSWORD_FALLBACK');
-      expect(['string', 'null']).toContain(typeof result);
+      expect(['string', 'object']).toContain(typeof result);
     });
 
     it('should prefer mounted secrets over environment variables', () => {
