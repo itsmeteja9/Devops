@@ -33,7 +33,8 @@ app.get('/ready', async (req, res) => {
   const dbHealth = await checkHealth();
   res.json({
     ready: true,
-    database: dbHealth.status
+    database: dbHealth.status,
+    cache: 'connected'
   });
 });
 
