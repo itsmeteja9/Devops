@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const logger = require('./src/logger');
 const { metricsMiddleware } = require('./src/metrics');
+const { checkHealth, getDeployments, getMetrics } = require('./src/database');
 
 const app = express();
 
@@ -14,13 +15,15 @@ app.use(metricsMiddleware);
 app.disable('x-powered-by');
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', async (req, res) => {
   logger.info('Health check called');
+  const dbHealth = await checkHealth();
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    version: '1.0.0'
+    version: '1.0.0',
+    database: dbHealth.status
   });
 });
 
@@ -52,9 +55,11 @@ app.get('/api/info', (req, res) => {
 });
 
 // Metrics endpoint
-app.get('/api/metrics', (req, res) => {
+app.get('/api/metrics', async (req, res) => {
   logger.info('Metrics endpoint called');
   const memUsage = process.memoryUsage();
+  const dbMetrics = await getMetrics(10);
+
   res.json({
     timestamp: new Date().toISOString(),
     memory: {
@@ -62,7 +67,23 @@ app.get('/api/metrics', (req, res) => {
       heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
       external: Math.round(memUsage.external / 1024 / 1024)
     },
-    uptime: Math.round(process.uptime())
+    uptime: Math.round(process.uptime()),
+    database: {
+      recordsStored: dbMetrics.length,
+      averageResponseTime: dbMetrics.length > 0
+        ? Math.round(dbMetrics.reduce((a, b) => a + b.response_time_ms, 0) / dbMetrics.length)
+        : 0
+    }
+  });
+});
+
+// Deployments endpoint
+app.get('/api/deployments', async (req, res) => {
+  logger.info('Deployments endpoint called');
+  const deployments = await getDeployments(10);
+  res.json({
+    deployments,
+    count: deployments.length
   });
 });
 

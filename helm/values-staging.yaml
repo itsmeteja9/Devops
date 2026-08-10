@@ -1,0 +1,39 @@
+# Staging Environment Overrides
+replicaCount: 1
+
+# Don't use imagePullSecrets - rely on Workload Identity
+imagePullSecrets: []
+
+environment: "staging"
+logLevel: "debug"
+
+# Staging database
+database:
+  enabled: true
+  host: "127.0.0.1"
+  port: "5432"
+  name: "devops_db"
+  user: "devops_app"
+
+cloudSql:
+  enabled: true
+  connectionName: "devops-poc-1786236741:us-central1:devops-db-us-central1"
+
+# No autoscaling in staging
+autoscaling:
+  enabled: false
+
+# Lighter resources for staging
+resources:
+  limits:
+    cpu: 250m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Service configuration
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 8080

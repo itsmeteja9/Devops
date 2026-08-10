@@ -1,0 +1,39 @@
+# Production Environment Overrides
+replicaCount: 2
+
+environment: "production"
+logLevel: "info"
+
+# Production database
+database:
+  enabled: true
+  host: "127.0.0.1"
+  port: "5432"
+  name: "devops_db"
+  user: "devops_app"
+
+cloudSql:
+  enabled: true
+  connectionName: "devops-poc-1786236741:us-central1:devops-db-us-central1"
+
+# Enable autoscaling in production
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+
+# Production resources
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+# Service configuration
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 8080

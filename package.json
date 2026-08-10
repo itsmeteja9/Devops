@@ -28,7 +28,8 @@
     "express": "^4.18.2",
     "dd-trace": "^4.20.0",
     "pino": "^8.17.2",
-    "pino-datadog": "^1.0.1"
+    "pino-datadog": "^1.0.1",
+    "pg": "^8.11.0"
   },
   "devDependencies": {
     "jest": "^29.7.0",

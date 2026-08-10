@@ -1,13 +1,41 @@
 replicaCount: 2
 
 image:
-  repository: us-central1-docker.pkg.dev/devops-poc-demo/hello-world-images/helm-demo
+  repository: us-central1-docker.pkg.dev/devops-poc-1786236741/docker-repo/devops-app
   pullPolicy: IfNotPresent
   tag: "latest"
 
+# Image pull secrets for private Artifact Registry
+imagePullSecrets:
+  - name: gcr-secret
+
 serviceAccount:
-  create: true
+  create: false
   name: helm-demo-ksa
+
+# PHASE 2: Database Configuration
+database:
+  enabled: true
+  host: "127.0.0.1"  # Cloud SQL Proxy
+  port: "5432"
+  name: "devops_db"
+  user: "devops_app"
+
+# Cloud SQL Proxy Configuration
+cloudSql:
+  enabled: true
+  connectionName: "devops-poc-1786236741:us-central1:devops-db-us-central1"
+  # Format: PROJECT:REGION:INSTANCE
+
+# Datadog Configuration
+datadog:
+  enabled: true
+  service: "devops-app"
+  site: "datadoghq.com"
+
+# Environment configuration
+environment: "production"
+logLevel: "info"
 
 service:
   type: LoadBalancer
@@ -15,7 +43,7 @@ service:
   targetPort: 8080
 
 ingress:
-  enabled: true
+  enabled: false
   className: "gce"
   annotations:
     kubernetes.io/ingress.global-static-ip-name: "helm-demo-ip"
@@ -27,11 +55,11 @@ ingress:
 
 resources:
   limits:
-    cpu: 256m
-    memory: 256Mi
+    cpu: 500m
+    memory: 512Mi
   requests:
-    cpu: 128m
-    memory: 128Mi
+    cpu: 250m
+    memory: 256Mi
 
 autoscaling:
   enabled: true
@@ -39,22 +67,20 @@ autoscaling:
   maxReplicas: 5
   targetCPUUtilizationPercentage: 70
 
-env:
-  - name: ENVIRONMENT
-    value: "demo"
-  - name: PORT
-    value: "8080"
-
 livenessProbe:
   httpGet:
     path: /health
-    port: 8080
+    port: http
   initialDelaySeconds: 15
   periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
 
 readinessProbe:
   httpGet:
-    path: /health
-    port: 8080
-  initialDelaySeconds: 5
+    path: /ready
+    port: http
+  initialDelaySeconds: 10
   periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
