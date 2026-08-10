@@ -139,66 +139,10 @@ jobs:
       - name: Terraform plan (dry-run)
         run: terraform -chdir=terraform plan -input=false -lock=false 2>&1 | head -50
 
-  # Stage 2: Build & Publish
-  build_and_publish:
-    name: Build & Publish Docker Image
-    needs: [unit_tests, sonarqube_scan, terraform_validate]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-
-    permissions:
-      contents: read
-      security-events: write
-
-    outputs:
-      image_uri: ${{ steps.image.outputs.uri }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
-          project_id: ${{ env.GCP_PROJECT_ID }}
-
-      - name: Set up Google Cloud CLI
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Configure Docker for Artifact Registry
-        run: |
-          gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev --quiet
-
-      - name: Create Artifact Registry repository
-        run: |
-          gcloud artifacts repositories create ${{ env.ARTIFACT_REGISTRY }} \
-            --repository-format=docker \
-            --location=${{ env.GCP_REGION }} \
-            --project=${{ env.GCP_PROJECT_ID }} || true
-
-      - name: Prepare image URI
-        id: image
-        run: |
-          IMAGE_URI="${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }}"
-          echo "uri=${IMAGE_URI}" >> $GITHUB_OUTPUT
-          echo "Image URI: ${IMAGE_URI}"
-
-      - name: Build Docker image
-        run: |
-          docker build \
-            --tag "${{ steps.image.outputs.uri }}" \
-            --label "git.sha=${{ github.sha }}" \
-            --label "git.ref=${{ github.ref }}" \
-            .
-
-      - name: Push Docker image
-        run: docker push "${{ steps.image.outputs.uri }}"
-
-  # Stage 2.5: Create Infrastructure with Terraform
+  # Stage 2: Create Infrastructure with Terraform
   terraform_apply:
     name: Create GCP Infrastructure
-    needs: build_and_publish
+    needs: [unit_tests, sonarqube_scan, terraform_validate]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -264,7 +208,56 @@ jobs:
           TF_VAR_project_id: ${{ env.GCP_PROJECT_ID }}
           TF_VAR_region: ${{ env.GCP_REGION }}
 
-  # Stage 3: Deploy to GKE
+  # Stage 3: Build & Publish Docker
+  build_and_publish:
+    name: Build & Publish Docker Image
+    needs: terraform_apply
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    permissions:
+      contents: read
+      security-events: write
+
+    outputs:
+      image_uri: ${{ steps.image.outputs.uri }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev --quiet
+
+      - name: Prepare image URI
+        id: image
+        run: |
+          IMAGE_URI="${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }}"
+          echo "uri=${IMAGE_URI}" >> $GITHUB_OUTPUT
+          echo "Image URI: ${IMAGE_URI}"
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            --tag "${{ steps.image.outputs.uri }}" \
+            --label "git.sha=${{ github.sha }}" \
+            --label "git.ref=${{ github.ref }}" \
+            .
+
+      - name: Push Docker image
+        run: docker push "${{ steps.image.outputs.uri }}"
+
+  # Stage 4: Deploy to GKE
   deploy_gke:
     name: Deploy to GKE
     needs: [build_and_publish, terraform_apply]

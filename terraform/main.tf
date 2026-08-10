@@ -67,9 +67,10 @@ data "google_container_cluster" "gke" {
   project  = var.project_id
 }
 
-data "google_artifact_registry_repository" "docker_repo" {
+resource "google_artifact_registry_repository" "docker_repo" {
   location      = var.region
   repository_id = var.artifact_registry_repo
+  format        = "DOCKER"
   project       = var.project_id
 }
 
