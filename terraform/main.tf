@@ -13,21 +13,7 @@ terraform {
       source  = "hashicorp/helm"
       version = "~> 2.10"
     }
-    null = {
-      source  = "hashicorp/null"
-      version = "~> 3.2"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.1"
-    }
   }
-
-  # Backend configuration - enable after first successful deployment
-  # backend "gcs" {
-  #   bucket = "devops-poc-1786236741-terraform-state"
-  #   prefix = "terraform/state"
-  # }
 }
 
 provider "google" {
@@ -51,165 +37,47 @@ provider "helm" {
   }
 }
 
-# Enable required APIs
 resource "google_project_service" "required_apis" {
   for_each = toset([
     "container.googleapis.com",
     "artifactregistry.googleapis.com",
     "compute.googleapis.com",
-    "iam.googleapis.com"
+    "iam.googleapis.com",
+    "secretmanager.googleapis.com"
   ])
 
   service            = each.value
   disable_on_destroy = false
 }
 
-# VPC Network - Already exists, skipping creation
-# TODO: Import existing VPC into terraform state
-# resource "google_compute_network" "vpc" {
-#   name                    = "${var.project_name}-vpc"
-#   auto_create_subnetworks = false
-#   project                 = var.project_id
-#
-#   depends_on = [google_project_service.required_apis]
-# }
-
-# Reference existing VPC
 data "google_compute_network" "vpc" {
   name    = "devops-vpc"
   project = var.project_id
 }
 
-# Reference existing subnet
 data "google_compute_subnetwork" "subnet" {
   name    = "devops-subnet"
   region  = var.region
   project = var.project_id
 }
 
-# GKE Cluster - Already exists, skipping creation
-# resource "google_container_cluster" "gke" {
-#   name     = var.cluster_name
-#   location = var.region
-#
-#   remove_default_node_pool = true
-#   initial_node_count       = 1
-#
-#   network    = data.google_compute_network.vpc.name
-#   subnetwork = data.google_compute_subnetwork.subnet.name
-#
-#   workload_identity_config {
-#     workload_pool = "${var.project_id}.svc.id.goog"
-#   }
-#
-#   ip_allocation_policy {
-#     cluster_secondary_range_name  = "pods"
-#     services_secondary_range_name = "services"
-#   }
-#
-#   addons_config {
-#     http_load_balancing {
-#       disabled = false
-#     }
-#   }
-#
-#   depends_on = [google_project_service.required_apis]
-#
-#   lifecycle {
-#     create_before_destroy = true
-#   }
-# }
-
-# Reference existing GKE cluster
 data "google_container_cluster" "gke" {
   name     = var.cluster_name
   location = var.region
   project  = var.project_id
 }
 
-# Node Pool - Already exists, skipping creation
-# resource "google_container_node_pool" "primary" {
-#   name       = "${var.project_name}-pool"
-#   cluster    = google_container_cluster.gke.name
-#   location   = var.region
-#   node_count = var.node_count
-#
-#   autoscaling {
-#     min_node_count = var.min_nodes
-#     max_node_count = var.max_nodes
-#   }
-#
-#   management {
-#     auto_repair  = true
-#     auto_upgrade = true
-#   }
-#
-#   node_config {
-#     preemptible  = var.use_preemptible_nodes
-#     machine_type = var.machine_type
-#     disk_size_gb = var.disk_size
-#
-#     oauth_scopes = [
-#       "https://www.googleapis.com/auth/cloud-platform"
-#     ]
-#
-#     workload_metadata_config {
-#       mode = "GKE_METADATA"
-#     }
-#
-#     labels = {
-#       environment = var.environment
-#       managed_by  = "terraform"
-#     }
-#
-#     tags = ["gke-node", var.project_name]
-#   }
-# }
-
-# Node pool is managed by GKE cluster, skipping reference
-
-# Artifact Registry
-# Artifact Registry - Already exists, skipping creation
-# TODO: Import existing repository into terraform state
-# resource "google_artifact_registry_repository" "docker_repo" {
-#   location      = var.region
-#   repository_id = var.artifact_registry_repo
-#   description   = "Docker images for ${var.project_name}"
-#   format        = "DOCKER"
-#   project       = var.project_id
-#
-#   depends_on = [google_project_service.required_apis]
-# }
-
-# Reference existing Artifact Registry
 data "google_artifact_registry_repository" "docker_repo" {
   location      = var.region
   repository_id = var.artifact_registry_repo
   project       = var.project_id
 }
 
-# Service Account for applications - Already exists, skipping creation
-# TODO: Import existing service account into terraform state
-# resource "google_service_account" "app_sa" {
-#   account_id   = "${var.project_name}-app"
-#   display_name = "Application Service Account"
-#   project      = var.project_id
-# }
-
-# Reference existing service account
 data "google_service_account" "app_sa" {
   account_id = "devops-app"
   project    = var.project_id
 }
 
-# Workload Identity Binding - Created by GKE cluster, skipping
-# resource "google_service_account_iam_member" "workload_identity" {
-#   service_account_id = data.google_service_account.app_sa.name
-#   role               = "roles/iam.workloadIdentityUser"
-#   member             = "serviceAccount:${var.project_id}.svc.id.goog[${var.app_namespace}/app-ksa]"
-# }
-
-# Artifact Registry read access
 resource "google_artifact_registry_repository_iam_member" "registry_access" {
   repository = data.google_artifact_registry_repository.docker_repo.name
   role       = "roles/artifactregistry.reader"
@@ -217,45 +85,6 @@ resource "google_artifact_registry_repository_iam_member" "registry_access" {
   location   = var.region
 }
 
-# Kubernetes Namespace - Created automatically by GKE, skipping
-# resource "kubernetes_namespace" "app" {
-#   metadata {
-#     name = var.app_namespace
-#     labels = {
-#       "app.kubernetes.io/name" = var.project_name
-#     }
-#   }
-#
-#   depends_on = [google_container_node_pool.primary]
-# }
-
-# Kubernetes Service Account - Created by Helm, skipping
-# resource "kubernetes_service_account" "app" {
-#   metadata {
-#     name      = "app-ksa"
-#     namespace = var.app_namespace
-#     annotations = {
-#       "iam.gke.io/gcp-service-account" = data.google_service_account.app_sa.email
-#     }
-#   }
-# }
-
-# Helm deployment is managed by GitHub Actions workflow (deploy_gke job)
-# Terraform handles only GCP infrastructure
-
-# ─────────────────────────────────────────────────────────────────────
-# PHASE 2: Cloud SQL Database + Secret Manager
-# ─────────────────────────────────────────────────────────────────────
-
-# Enable Secret Manager API
-resource "google_project_service" "secretmanager" {
-  service            = "secretmanager.googleapis.com"
-  disable_on_destroy = false
-}
-
-# Cloud SQL API and password generation removed for now - Phase 3
-
-# Store database password in Secret Manager
 resource "google_secret_manager_secret" "db_password" {
   secret_id = "devops-db-password"
 
@@ -268,22 +97,15 @@ resource "google_secret_manager_secret" "db_password" {
     auto {}
   }
 
-  depends_on = [google_project_service.secretmanager]
+  depends_on = [google_project_service.required_apis]
 }
 
-# Secret version removed - will recreate in Phase 3 with actual password
-
-# Grant GKE service account access to database password secret
 resource "google_secret_manager_secret_iam_member" "db_password_access" {
   secret_id = google_secret_manager_secret.db_password.id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${data.google_service_account.app_sa.email}"
 }
 
-# Cloud SQL resources commented out for Phase 3
-# To be added back later with proper configuration
-
-# Outputs
 output "gke_cluster_name" {
   value       = data.google_container_cluster.gke.name
   description = "GKE Cluster Name"
@@ -300,17 +122,10 @@ output "artifact_registry_url" {
   description = "Artifact Registry URL"
 }
 
-output "kubernetes_namespace" {
-  value       = var.app_namespace
-  description = "Kubernetes Namespace"
-}
-
 output "app_service_account" {
   value       = data.google_service_account.app_sa.email
   description = "Application Service Account Email"
 }
-
-# Cloud SQL outputs removed - will be added in Phase 3
 
 output "db_password_secret" {
   value       = google_secret_manager_secret.db_password.id
