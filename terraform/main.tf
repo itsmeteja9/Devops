@@ -306,8 +306,8 @@ resource "google_sql_database_instance" "postgres" {
     disk_type         = "PD_SSD"
 
     backup_configuration {
-      enabled                        = true
-      start_time                     = "03:00"
+      enabled    = true
+      start_time = "03:00"
       backup_retention_settings {
         retained_backups = 30
         retention_unit   = "COUNT"
@@ -331,7 +331,7 @@ resource "google_sql_database_instance" "postgres" {
   }
 
   deletion_protection = false
-  depends_on = [google_project_service.cloudsql]
+  depends_on          = [google_project_service.cloudsql]
 }
 
 # Database
