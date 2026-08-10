@@ -238,6 +238,40 @@ jobs:
       - name: Terraform init
         run: terraform -chdir=terraform init -backend=false -input=false
 
+      - name: Import existing Cloud SQL instance
+        run: |
+          terraform -chdir=terraform import google_sql_database_instance.postgres devops-db-us-central1 || true
+        env:
+          TF_VAR_project_id: ${{ env.GCP_PROJECT_ID }}
+          TF_VAR_region: ${{ env.GCP_REGION }}
+
+      - name: Import existing Cloud SQL database
+        run: |
+          terraform -chdir=terraform import google_sql_database.devops_db devops-db-us-central1:devops_db || true
+        env:
+          TF_VAR_project_id: ${{ env.GCP_PROJECT_ID }}
+          TF_VAR_region: ${{ env.GCP_REGION }}
+
+      - name: Import existing Cloud SQL user
+        run: |
+          terraform -chdir=terraform import google_sql_user.app_user devops-db-us-central1/devops_app || true
+        env:
+          TF_VAR_project_id: ${{ env.GCP_PROJECT_ID }}
+          TF_VAR_region: ${{ env.GCP_REGION }}
+
+      - name: Import existing Secret Manager secret
+        run: |
+          terraform -chdir=terraform import google_secret_manager_secret.db_password projects/${{ env.GCP_PROJECT_ID }}/secrets/devops-db-password || true
+        env:
+          TF_VAR_project_id: ${{ env.GCP_PROJECT_ID }}
+          TF_VAR_region: ${{ env.GCP_REGION }}
+
+      - name: Terraform plan
+        run: terraform -chdir=terraform plan -input=false -lock=false
+        env:
+          TF_VAR_project_id: ${{ env.GCP_PROJECT_ID }}
+          TF_VAR_region: ${{ env.GCP_REGION }}
+
       - name: Terraform apply
         run: terraform -chdir=terraform apply -auto-approve -input=false
         env:
