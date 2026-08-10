@@ -17,9 +17,6 @@ spec:
         {{- include "helm-demo.selectorLabels" . | nindent 8 }}
     spec:
       serviceAccountName: {{ include "helm-demo.serviceAccountName" . }}
-
-      # Volumes removed - Phase 3 will add back
-
       containers:
         # Main application container
         - name: {{ .Chart.Name }}
