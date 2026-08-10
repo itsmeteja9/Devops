@@ -3,6 +3,9 @@ node_modules/
 npm-debug.log*
 yarn-error.log*
 
+# Coverage (test artifacts)
+coverage/
+
 # Terraform
 terraform/.terraform/
 terraform/.terraform.lock.hcl
