@@ -28,12 +28,12 @@ app.get('/health', async (req, res) => {
 });
 
 // Readiness check
-app.get('/ready', (req, res) => {
+app.get('/ready', async (req, res) => {
   logger.info('Readiness check called');
+  const dbHealth = await checkHealth();
   res.json({
     ready: true,
-    database: 'connected',
-    cache: 'connected'
+    database: dbHealth.status
   });
 });
 

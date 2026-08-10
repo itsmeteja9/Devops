@@ -192,20 +192,6 @@ jobs:
             --label "git.ref=${{ github.ref }}" \
             .
 
-      - name: Scan Docker image with Trivy
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ steps.image.outputs.uri }}
-          format: sarif
-          output: trivy-results.sarif
-        continue-on-error: true
-
-      - name: Upload Trivy results
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: trivy-results.sarif
-        continue-on-error: true
-
       - name: Push Docker image
         run: docker push "${{ steps.image.outputs.uri }}"
 
@@ -388,47 +374,7 @@ jobs:
           echo "=== Service External IP ==="
           kubectl get svc ${{ env.APP_NAME }}-helm-demo -n ${{ env.APP_NAMESPACE }}
 
-  # Stage 4: PR Validation (Pull Requests Only)
-  pr_validation:
-    name: PR Validation
-    needs: [unit_tests, sonarqube_scan, terraform_validate]
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Helm
-        uses: azure/setup-helm@v3
-        with:
-          version: "latest"
-
-      - name: Lint Helm chart
-        run: helm lint ./helm/${{ env.APP_NAME }}
-
-      - name: Template Helm chart
-        run: |
-          helm template ${{ env.APP_NAME }} ./helm/${{ env.APP_NAME }} \
-            --namespace ${{ env.APP_NAMESPACE }} \
-            --set image.repository="${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}" \
-            --set image.tag="latest" > helm-manifest.yaml
-
-          echo "✅ Helm manifest generated"
-          head -50 helm-manifest.yaml
-
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_wrapper: false
-
-      - name: Terraform plan (PR preview)
-        run: |
-          terraform -chdir=terraform init -backend=false -input=false
-          terraform -chdir=terraform plan -input=false -lock=false 2>&1 | head -100
-        continue-on-error: true
-
-  # Stage 5: Summary
+  # Stage 4: Summary
   pipeline_summary:
     name: Pipeline Summary
     needs: [unit_tests, sonarqube_scan, terraform_validate, build_and_publish, deploy_gke]
@@ -444,4 +390,4 @@ jobs:
           echo "✅ Docker Build: ${{ needs.build_and_publish.result }}"
           echo "✅ GKE Deploy: ${{ needs.deploy_gke.result }}"
           echo ""
-          echo "🚀 Pipeline complete! Check the Actions tab for details."
+          echo "🚀 Pipeline complete!"

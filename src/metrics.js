@@ -18,17 +18,7 @@ const recordResponseTime = (duration) => {
 
 const metricsMiddleware = (req, res, next) => {
   const startTime = Date.now();
-
-  // Track request
   metrics.totalRequests += 1;
-
-  // Log request
-  logger.info({
-    msg: 'Incoming request',
-    method: req.method,
-    path: req.path,
-    ip: req.ip
-  });
 
   // Capture response
   const originalJson = res.json;
@@ -36,20 +26,24 @@ const metricsMiddleware = (req, res, next) => {
     const duration = Date.now() - startTime;
     recordResponseTime(duration);
 
-    // Log response
-    logger.info({
-      msg: 'Request completed',
-      method: req.method,
-      path: req.path,
-      status: res.statusCode,
-      duration: `${duration}ms`
-    });
+    // Log only errors or slow requests
+    if (res.statusCode >= 400 || duration > 1000) {
+      logger.warn({
+        msg: 'Request issue',
+        method: req.method,
+        path: req.path,
+        status: res.statusCode,
+        duration: `${duration}ms`
+      });
+    }
 
-    // Call original json
+    if (res.statusCode >= 400) {
+      metrics.totalErrors += 1;
+    }
+
     return originalJson.call(this, data);
   };
 
-  // Track errors
   const originalSend = res.send;
   res.send = function(data) {
     if (res.statusCode >= 400) {

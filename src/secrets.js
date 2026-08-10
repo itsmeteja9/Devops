@@ -39,7 +39,7 @@ module.exports = {
     database: process.env.DATABASE_NAME || 'devops_db',
     user: process.env.DATABASE_USER || 'devops_app',
     password: loadSecret('db-password', 'DATABASE_PASSWORD'),
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: true } : false
   }),
 
   getDatadogConfig: () => ({
