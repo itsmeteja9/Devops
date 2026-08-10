@@ -7,18 +7,6 @@ imagePullSecrets: []
 environment: "staging"
 logLevel: "debug"
 
-# Staging database
-database:
-  enabled: true
-  host: "127.0.0.1"
-  port: "5432"
-  name: "devops_db"
-  user: "devops_app"
-
-cloudSql:
-  enabled: true
-  connectionName: "devops-poc-1786236741:us-central1:devops-db-us-central1"
-
 # No autoscaling in staging
 autoscaling:
   enabled: false

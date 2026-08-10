@@ -10,28 +10,16 @@ imagePullSecrets:
   - name: gcr-secret
 
 serviceAccount:
-  create: false
+  create: true
   name: helm-demo-ksa
 
-# PHASE 2: Database Configuration
-database:
-  enabled: true
-  host: "127.0.0.1"  # Cloud SQL Proxy
-  port: "5432"
-  name: "devops_db"
-  user: "devops_app"
+# Database configuration - Phase 3
+# database:
+#   enabled: false
 
-# Cloud SQL Proxy Configuration
-cloudSql:
-  enabled: true
-  connectionName: "devops-poc-1786236741:us-central1:devops-db-us-central1"
-  # Format: PROJECT:REGION:INSTANCE
-
-# Datadog Configuration
-datadog:
-  enabled: true
-  service: "devops-app"
-  site: "datadoghq.com"
+# Datadog monitoring - Phase 3
+# datadog:
+#   enabled: false
 
 # Environment configuration
 environment: "production"
