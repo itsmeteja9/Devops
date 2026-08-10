@@ -6,10 +6,4 @@ metadata:
     {{- include "helm-demo.labels" . | nindent 4 }}
 data:
   NODE_ENV: {{ .Values.environment | quote }}
-  DATABASE_HOST: {{ .Values.database.host | quote }}
-  DATABASE_PORT: {{ .Values.database.port | quote }}
-  DATABASE_NAME: {{ .Values.database.name | quote }}
-  DATABASE_USER: {{ .Values.database.user | quote }}
   LOG_LEVEL: {{ .Values.logLevel | quote }}
-  DD_SERVICE: {{ .Values.datadog.service | quote }}
-  DD_SITE: {{ .Values.datadog.site | quote }}
