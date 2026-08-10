@@ -18,16 +18,7 @@ spec:
     spec:
       serviceAccountName: {{ include "helm-demo.serviceAccountName" . }}
 
-      # Volumes for secrets
-      volumes:
-      - name: db-password
-        secret:
-          secretName: devops-db-password
-          defaultMode: 0400
-      - name: dd-api-key
-        secret:
-          secretName: dd-api-key
-          defaultMode: 0400
+      # Volumes removed - Phase 3 will add back
 
       containers:
         # Main application container
@@ -39,70 +30,18 @@ spec:
               containerPort: 8080
               protocol: TCP
 
-          # Volume mounts for secrets
-          volumeMounts:
-          - name: db-password
-            mountPath: /var/secrets/db-password
-            readOnly: true
-          - name: dd-api-key
-            mountPath: /var/secrets
-            readOnly: true
-
-          # Environment variables from ConfigMap
           env:
           - name: NODE_ENV
-            valueFrom:
-              configMapKeyRef:
-                name: {{ include "helm-demo.fullname" . }}-config
-                key: NODE_ENV
-
-          - name: DATABASE_HOST
-            value: "127.0.0.1"  # Cloud SQL Proxy runs on localhost
-
-          - name: DATABASE_PORT
-            valueFrom:
-              configMapKeyRef:
-                name: {{ include "helm-demo.fullname" . }}-config
-                key: DATABASE_PORT
-
-          - name: DATABASE_NAME
-            valueFrom:
-              configMapKeyRef:
-                name: {{ include "helm-demo.fullname" . }}-config
-                key: DATABASE_NAME
-
-          - name: DATABASE_USER
-            valueFrom:
-              configMapKeyRef:
-                name: {{ include "helm-demo.fullname" . }}-config
-                key: DATABASE_USER
+            value: "production"
 
           - name: LOG_LEVEL
-            valueFrom:
-              configMapKeyRef:
-                name: {{ include "helm-demo.fullname" . }}-config
-                key: LOG_LEVEL
+            value: "info"
 
           - name: DD_SERVICE
-            valueFrom:
-              configMapKeyRef:
-                name: {{ include "helm-demo.fullname" . }}-config
-                key: DD_SERVICE
-
-          - name: DD_SITE
-            valueFrom:
-              configMapKeyRef:
-                name: {{ include "helm-demo.fullname" . }}-config
-                key: DD_SITE
+            value: "devops-app"
 
           - name: DD_VERSION
             value: {{ .Values.image.tag | quote }}
-
-          - name: DD_ENV
-            valueFrom:
-              configMapKeyRef:
-                name: {{ include "helm-demo.fullname" . }}-config
-                key: NODE_ENV
 
           - name: DD_TRACE_ENABLED
             value: "true"
@@ -117,32 +56,6 @@ spec:
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-
-        # Cloud SQL Auth Proxy sidecar
-        - name: cloud-sql-proxy
-          image: gcr.io/cloudsql-docker/cloud-sql-proxy:2.7.0
-          args:
-            - "--port=5432"
-            - "--instances={{ .Values.cloudSql.connectionName }}=tcp:0.0.0.0:5432"
-            - "--use-http-health-check"
-
-          ports:
-            - containerPort: 5432
-              name: postgresql
-
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            runAsNonRoot: true
-            runAsUser: 65534
-
-          resources:
-            limits:
-              cpu: 100m
-              memory: 64Mi
-            requests:
-              cpu: 50m
-              memory: 32Mi
 
       imagePullSecrets:
         {{- toYaml .Values.imagePullSecrets | nindent 8 }}
