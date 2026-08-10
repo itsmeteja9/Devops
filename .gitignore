@@ -40,3 +40,4 @@ Thumbs.db
 logs/
 *.log
 terraform/terraform.tfstate
+".claude/" 
