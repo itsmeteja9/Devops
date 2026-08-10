@@ -327,6 +327,20 @@ jobs:
         run: |
           kubectl delete serviceaccount helm-demo-ksa -n default --ignore-not-found=true || true
 
+      - name: Wait for previous Helm operation to complete
+        run: |
+          for i in {1..30}; do
+            STATUS=$(helm status ${{ env.APP_NAME }} --namespace ${{ env.APP_NAMESPACE }} 2>/dev/null | grep STATUS | awk '{print $NF}' || echo "deployed")
+            if [[ "$STATUS" != "pending-upgrade" && "$STATUS" != "pending-install" ]]; then
+              echo "Release status: $STATUS - Ready for upgrade"
+              exit 0
+            fi
+            echo "Waiting for previous operation... (attempt $i/30)"
+            sleep 2
+          done
+          echo "Timeout waiting for release"
+          exit 1
+
       - name: Deploy with Helm
         run: |
           helm upgrade --install ${{ env.APP_NAME }} ./helm \
