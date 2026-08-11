@@ -67,6 +67,58 @@ data "google_container_cluster" "gke" {
   project  = var.project_id
 }
 
+# Manage the primary node pool with upgraded machine type and on-demand instances
+resource "google_container_node_pool" "primary" {
+  name       = "primary"
+  location   = var.region
+  cluster    = data.google_container_cluster.gke.name
+  project    = var.project_id
+  node_count = var.node_count
+
+  autoscaling {
+    min_node_count = var.min_nodes
+    max_node_count = var.max_nodes
+  }
+
+  node_config {
+    machine_type    = var.machine_type
+    preemptible     = var.use_preemptible_nodes
+    disk_size_gb    = var.disk_size
+    disk_type       = "pd-standard"
+
+    oauth_scopes = [
+      "https://www.googleapis.com/auth/cloud-platform"
+    ]
+
+    metadata = {
+      disable-legacy-endpoints = "true"
+    }
+
+    shielded_instance_config {
+      enable_secure_boot          = true
+      enable_integrity_monitoring = true
+    }
+
+    labels = {
+      environment = var.environment
+      managed_by  = "terraform"
+      machine_type = var.machine_type
+    }
+
+    tags = [
+      "devops-gke-node",
+      "gke-cluster"
+    ]
+  }
+
+  management {
+    auto_repair  = true
+    auto_upgrade = true
+  }
+
+  depends_on = [google_project_service.required_apis]
+}
+
 resource "google_artifact_registry_repository" "docker_repo" {
   location      = var.region
   repository_id = var.artifact_registry_repo
@@ -131,4 +183,24 @@ output "app_service_account" {
 output "db_password_secret" {
   value       = google_secret_manager_secret.db_password.id
   description = "Database Password Secret ID"
+}
+
+output "node_pool_name" {
+  value       = google_container_node_pool.primary.name
+  description = "GKE Node Pool Name"
+}
+
+output "node_machine_type" {
+  value       = var.machine_type
+  description = "Node Machine Type"
+}
+
+output "node_preemptible" {
+  value       = var.use_preemptible_nodes
+  description = "Whether nodes are preemptible"
+}
+
+output "node_pool_status" {
+  value       = "Node pool configured with ${var.machine_type} ${var.use_preemptible_nodes ? "preemptible" : "on-demand"} instances"
+  description = "Node Pool Configuration Status"
 }
