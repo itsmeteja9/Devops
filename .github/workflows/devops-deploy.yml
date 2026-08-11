@@ -168,27 +168,6 @@ jobs:
       - name: Terraform init
         run: terraform -chdir=terraform init -backend=false -input=false
 
-      - name: Import existing Cloud SQL instance
-        run: |
-          terraform -chdir=terraform import google_sql_database_instance.postgres devops-db-us-central1 || true
-        env:
-          TF_VAR_project_id: ${{ env.GCP_PROJECT_ID }}
-          TF_VAR_region: ${{ env.GCP_REGION }}
-
-      - name: Import existing Cloud SQL database
-        run: |
-          terraform -chdir=terraform import google_sql_database.devops_db devops-db-us-central1:devops_db || true
-        env:
-          TF_VAR_project_id: ${{ env.GCP_PROJECT_ID }}
-          TF_VAR_region: ${{ env.GCP_REGION }}
-
-      - name: Import existing Cloud SQL user
-        run: |
-          terraform -chdir=terraform import google_sql_user.app_user devops-db-us-central1/devops_app || true
-        env:
-          TF_VAR_project_id: ${{ env.GCP_PROJECT_ID }}
-          TF_VAR_region: ${{ env.GCP_REGION }}
-
       - name: Import existing Artifact Registry
         run: |
           terraform -chdir=terraform import google_artifact_registry_repository.docker_repo projects/${{ env.GCP_PROJECT_ID }}/locations/${{ env.GCP_REGION }}/repositories/docker-repo || true
