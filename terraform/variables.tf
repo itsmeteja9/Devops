@@ -50,7 +50,7 @@ variable "cluster_name" {
 variable "machine_type" {
   description = "Node machine type"
   type        = string
-  default     = "e2-small"
+  default     = "e2-medium"
 }
 
 variable "node_count" {
@@ -74,7 +74,7 @@ variable "max_nodes" {
 variable "use_preemptible_nodes" {
   description = "Use preemptible nodes for cost savings"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "disk_size" {
