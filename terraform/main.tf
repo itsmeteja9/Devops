@@ -81,10 +81,10 @@ resource "google_container_node_pool" "primary" {
   }
 
   node_config {
-    machine_type    = var.machine_type
-    preemptible     = var.use_preemptible_nodes
-    disk_size_gb    = var.disk_size
-    disk_type       = "pd-standard"
+    machine_type = var.machine_type
+    preemptible  = var.use_preemptible_nodes
+    disk_size_gb = var.disk_size
+    disk_type    = "pd-standard"
 
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform"
@@ -100,8 +100,8 @@ resource "google_container_node_pool" "primary" {
     }
 
     labels = {
-      environment = var.environment
-      managed_by  = "terraform"
+      environment  = var.environment
+      managed_by   = "terraform"
       machine_type = var.machine_type
     }
 
