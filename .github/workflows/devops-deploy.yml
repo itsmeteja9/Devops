@@ -168,6 +168,13 @@ jobs:
       - name: Terraform init
         run: terraform -chdir=terraform init -backend=false -input=false
 
+      - name: Import existing Node Pool
+        run: |
+          terraform -chdir=terraform import google_container_node_pool.primary projects/${{ env.GCP_PROJECT_ID }}/locations/${{ env.GCP_REGION }}/clusters/${{ env.CLUSTER_NAME }}/nodePools/primary || true
+        env:
+          TF_VAR_project_id: ${{ env.GCP_PROJECT_ID }}
+          TF_VAR_region: ${{ env.GCP_REGION }}
+
       - name: Import existing Artifact Registry
         run: |
           terraform -chdir=terraform import google_artifact_registry_repository.docker_repo projects/${{ env.GCP_PROJECT_ID }}/locations/${{ env.GCP_REGION }}/repositories/docker-repo || true
